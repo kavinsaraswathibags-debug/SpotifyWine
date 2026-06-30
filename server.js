@@ -190,12 +190,17 @@ async function startServer() {
   // Try connecting to DB first
   await db.connect();
   
-  app.listen(PORT, () => {
-    console.log(`======================================================`);
-    console.log(`Spotify Prototype server is running on port ${PORT}`);
-    console.log(`Open http://localhost:${PORT} in your web browser`);
-    console.log(`======================================================`);
-  });
+  // Only listen if not running in a serverless environment (where serverless engines handle execution)
+  if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL && !process.env.NOW_BUILDER) {
+    app.listen(PORT, () => {
+      console.log(`======================================================`);
+      console.log(`Spotify Prototype server is running on port ${PORT}`);
+      console.log(`Open http://localhost:${PORT} in your web browser`);
+      console.log(`======================================================`);
+    });
+  }
 }
 
 startServer();
+
+module.exports = app;

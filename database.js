@@ -2,8 +2,31 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const os = require('os');
 
-const FALLBACK_FILE = path.join(__dirname, 'db_fallback.json');
+// Helper to check if a directory has write permissions
+function hasWritePermission(dir) {
+  try {
+    const testFile = path.join(dir, '.write_test');
+    fs.writeFileSync(testFile, '');
+    fs.unlinkSync(testFile);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// In serverless environments, the local task folder is read-only.
+// We fall back to the system temp directory if local path is not writable.
+let FALLBACK_FILE = path.join(__dirname, 'db_fallback.json');
+try {
+  if (process.env.VERCEL || process.env.NOW_BUILDER || !hasWritePermission(__dirname)) {
+    FALLBACK_FILE = path.join(os.tmpdir(), 'db_fallback.json');
+  }
+} catch (e) {
+  FALLBACK_FILE = path.join(os.tmpdir(), 'db_fallback.json');
+}
+
 let useFallback = false;
 
 // Initialize Fallback JSON DB if it doesn't exist
