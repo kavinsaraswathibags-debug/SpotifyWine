@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify - Ilaiyaraaja Hits (Wine Edition)</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Style Sheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo-container">
+        <i class="fa-brands fa-spotify logo-icon"></i>
+        <span class="logo-text">Spotify<span class="logo-sub">Wine</span></span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item active" data-view="home">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+          </li>
+          <li class="nav-item" data-view="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Search</span>
+          </li>
+          <li class="nav-item" data-view="liked" id="nav-liked">
+            <i class="fa-solid fa-heart"></i>
+            <span>Liked Songs</span>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="library-container">
+        <div class="library-header">
+          <div class="library-title">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Your Library</span>
+          </div>
+          <button id="create-playlist-btn" title="Create Playlist">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <!-- PLAYLISTS LIST -->
+        <div class="playlists-list" id="sidebar-playlists">
+          <!-- Populated dynamically via JS -->
+          <div class="sidebar-placeholder-text">Log in to create custom playlists.</div>
+        </div>
+      </div>
+
+      <!-- USER FOOTER SECTION -->
+      <div class="sidebar-user-section" id="sidebar-user-area">
+        <!-- Guest View -->
+        <div class="auth-prompt" id="sidebar-guest-view">
+          <p>Login to save your likes and playlists</p>
+          <button class="btn btn-wine btn-block" id="sidebar-login-btn">Log In</button>
+        </div>
+        <!-- User View -->
+        <div class="user-profile-card d-none" id="sidebar-user-view">
+          <div class="user-avatar">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="user-details">
+            <span class="user-name" id="user-display-name">Username</span>
+            <span class="user-status" id="user-db-status">Online</span>
+          </div>
+          <button class="btn-logout" id="logout-btn" title="Log Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="main-panel">
+      <!-- TOP BAR -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <!-- Back/Forward placeholder arrows -->
+          <div class="nav-arrows">
+            <button class="arrow-btn" id="history-back-btn" title="Go back"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="arrow-btn" id="history-forward-btn" title="Go forward"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          
+          <!-- SEARCH CONTAINER (only visible in Search View) -->
+          <div class="search-container d-none" id="top-search-bar">
+            <i class="fa-solid fa-magnifying-glass search-bar-icon"></i>
+            <input type="text" id="search-input" placeholder="What do you want to play?" autocomplete="off">
+            <button id="search-clear-btn" class="d-none"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+
+        <div class="top-bar-right">
+          <!-- Optional connection status banner -->
+          <div id="db-indicator" class="db-indicator-offline" title="Connection status">
+            <i class="fa-solid fa-database"></i> <span id="db-indicator-text">Connecting...</span>
+          </div>
+          <button class="btn btn-wine btn-small" id="top-login-btn">Log In</button>
+        </div>
+      </header>
+
+      <!-- VIEW PANELS -->
+      <div class="content-wrapper">
+        
+        <!-- 1. HOME VIEW -->
+        <section id="view-home" class="view-panel">
+          <div class="welcome-banner">
+            <div class="banner-overlay"></div>
+            <div class="banner-content">
+              <span class="banner-tag">SPOTIFY EXCLUSIVE</span>
+              <h1>Maestro Ilaiyaraaja Hits</h1>
+              <p>Experience 45 handpicked timeless masterpieces of the music wizard, colored in our custom rich wine aesthetic. Stream and save your absolute favorites.</p>
+              <button class="btn btn-wine btn-large" id="play-all-hero-btn">
+                <i class="fa-solid fa-play"></i> Play All
+              </button>
+            </div>
+          </div>
+
+          <!-- ALBUM CATEGORIES GRID -->
+          <div class="section-container">
+            <h2>Select Album Moods</h2>
+            <div class="categories-grid" id="categories-container">
+              <!-- Dynamically populated categories -->
+            </div>
+          </div>
+
+          <!-- ALL SONGS LIST -->
+          <div class="section-container">
+            <div class="section-header">
+              <h2>All Timeless Classics</h2>
+              <span class="track-count" id="home-total-tracks">45 songs</span>
+            </div>
+            
+            <div class="songs-table-container">
+              <table class="songs-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-title">Title</th>
+                    <th class="col-album">Album</th>
+                    <th class="col-category">Mood</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="home-songs-list">
+                  <!-- Dynamically populated from JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. SEARCH VIEW -->
+        <section id="view-search" class="view-panel d-none">
+          <div class="search-header-padding">
+            <h2>Search Results</h2>
+            <p class="search-helper-text" id="search-prompt-text">Type in the top search bar to filter through the Ilaiyaraaja catalogue...</p>
+          </div>
+
+          <div class="section-container">
+            <div class="songs-table-container d-none" id="search-results-container">
+              <table class="songs-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-title">Title</th>
+                    <th class="col-album">Album</th>
+                    <th class="col-category">Mood</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="search-songs-list">
+                  <!-- Dynamically populated from JS -->
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Genres grid for browsing when search is empty -->
+            <div id="search-browse-all">
+              <h3>Browse All Genres</h3>
+              <div class="browse-grid" id="browse-grid-container">
+                <!-- Dynamically populated with category cards -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. LIKED SONGS VIEW -->
+        <section id="view-liked" class="view-panel d-none">
+          <div class="playlist-header-banner liked-banner">
+            <div class="playlist-cover liked-cover">
+              <i class="fa-solid fa-heart"></i>
+            </div>
+            <div class="playlist-info">
+              <span class="playlist-type">PLAYLIST</span>
+              <h1 id="liked-playlist-title">Liked Songs</h1>
+              <div class="playlist-meta">
+                <span class="playlist-owner" id="liked-user-owner">User</span>
+                <span class="bullet">•</span>
+                <span id="liked-songs-count">0 songs</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="playlist-actions-row">
+            <button class="btn-play-playlist btn-wine" id="play-liked-btn" disabled>
+              <i class="fa-solid fa-play"></i>
+            </button>
+            <span class="liked-actions-info" id="liked-empty-msg">You haven't liked any songs yet. Click the heart icon on any song to save it!</span>
+          </div>
+
+          <div class="section-container">
+            <div class="songs-table-container">
+              <table class="songs-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-title">Title</th>
+                    <th class="col-album">Album</th>
+                    <th class="col-category">Mood</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="liked-songs-list">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. PLAYLIST DETAIL VIEW -->
+        <section id="view-playlist" class="view-panel d-none">
+          <div class="playlist-header-banner custom-playlist-banner">
+            <div class="playlist-cover custom-playlist-cover">
+              <i class="fa-solid fa-music"></i>
+            </div>
+            <div class="playlist-info">
+              <span class="playlist-type">PLAYLIST</span>
+              <h1 id="playlist-detail-title">Playlist Name</h1>
+              <div class="playlist-meta">
+                <span class="playlist-owner" id="playlist-detail-owner">User</span>
+                <span class="bullet">•</span>
+                <span id="playlist-detail-count">0 songs</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="playlist-actions-row">
+            <button class="btn-play-playlist btn-wine" id="play-playlist-btn" disabled>
+              <i class="fa-solid fa-play"></i>
+            </button>
+            <button class="btn-delete-playlist" id="delete-playlist-btn" title="Delete Playlist">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+
+          <div class="section-container">
+            <h3>Songs in Playlist</h3>
+            <div class="songs-table-container">
+              <table class="songs-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-title">Title</th>
+                    <th class="col-album">Album</th>
+                    <th class="col-category">Mood</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="playlist-songs-list">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Add Songs to Playlist Section -->
+          <div class="section-container playlist-add-songs-sec">
+            <hr class="divider">
+            <h3>Recommended Songs</h3>
+            <p>Add songs from the catalog to this playlist:</p>
+            <div class="songs-table-container">
+              <table class="songs-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-title">Title</th>
+                    <th class="col-album">Album</th>
+                    <th class="col-action">Add</th>
+                  </tr>
+                </thead>
+                <tbody id="playlist-add-candidates-list">
+                  <!-- Populated dynamically with songs not in this playlist -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. AUTHENTICATION VIEW -->
+        <section id="view-auth" class="view-panel d-none">
+          <div class="auth-page-container">
+            <div class="auth-card">
+              <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login">Log In</button>
+                <button class="auth-tab" id="tab-register">Register</button>
+              </div>
+
+              <!-- Login Form -->
+              <form id="login-form" class="auth-form">
+                <h2>Welcome Back</h2>
+                <p>Access your curated playlists and synced liked songs database.</p>
+                
+                <div class="form-group">
+                  <label for="login-username">Username</label>
+                  <div class="input-wrapper">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="login-username" required placeholder="Enter your username">
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="login-password">Password</label>
+                  <div class="input-wrapper">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-password" required placeholder="Enter your password">
+                  </div>
+                </div>
+                
+                <div class="form-error" id="login-error-msg"></div>
+                <button type="submit" class="btn btn-wine btn-block btn-large">Log In</button>
+              </form>
+
+              <!-- Register Form -->
+              <form id="register-form" class="auth-form d-none">
+                <h2>Create Account</h2>
+                <p>Register to save preferences. Fallback server active if MongoDB is offline.</p>
+                
+                <div class="form-group">
+                  <label for="register-username">Username</label>
+                  <div class="input-wrapper">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="register-username" required placeholder="Choose a username">
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-password">Password</label>
+                  <div class="input-wrapper">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="register-password" required placeholder="Choose a password (min 6 chars)">
+                  </div>
+                </div>
+                
+                <div class="form-error" id="register-error-msg"></div>
+                <button type="submit" class="btn btn-wine btn-block btn-large">Register</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL - QUEUE DRAWER -->
+    <aside class="queue-panel d-none" id="app-queue-drawer">
+      <div class="queue-header">
+        <h3>Play Queue</h3>
+        <button id="close-queue-btn" title="Close Queue"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="queue-section">
+        <span class="queue-sub">Now Playing</span>
+        <div id="queue-now-playing-card">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+      <div class="queue-section flex-grow">
+        <span class="queue-sub">Next Up</span>
+        <div class="queue-list" id="queue-next-up-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- BOTTOM PLAYER BAR -->
+    <footer class="player-bar">
+      <!-- 1. LEFT: TRACK DETAILS -->
+      <div class="player-track-info">
+        <div class="player-cover-container">
+          <img src="covers/cover1.svg" alt="Song Cover" id="player-song-cover">
+        </div>
+        <div class="player-song-details">
+          <span class="player-song-title" id="player-song-title">Select a track</span>
+          <span class="player-song-artist" id="player-song-artist">to begin playing</span>
+        </div>
+        <button id="player-like-btn" class="player-icon-btn" title="Like Song" disabled>
+          <i class="fa-regular fa-heart"></i>
+        </button>
+      </div>
+
+      <!-- 2. MIDDLE: PLAYBACK CONTROLS -->
+      <div class="player-controls-area">
+        <div class="player-buttons">
+          <button id="player-shuffle-btn" class="player-icon-btn" title="Shuffle"><i class="fa-solid fa-shuffle"></i></button>
+          <button id="player-prev-btn" class="player-icon-btn" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
+          <button id="player-play-btn" class="player-play-circle btn-wine" title="Play"><i class="fa-solid fa-play"></i></button>
+          <button id="player-next-btn" class="player-icon-btn" title="Next"><i class="fa-solid fa-forward-step"></i></button>
+          <button id="player-repeat-btn" class="player-icon-btn" title="Repeat"><i class="fa-solid fa-repeat"></i></button>
+        </div>
+        <div class="player-progress-bar">
+          <span class="time-label" id="player-current-time">0:00</span>
+          <div class="progress-slider-container">
+            <div class="progress-slider-track" id="progress-slider-bar">
+              <div class="progress-slider-fill" id="progress-slider-fill"></div>
+              <div class="progress-slider-thumb" id="progress-slider-thumb"></div>
+            </div>
+            <!-- Invisible overlay input for precise control -->
+            <input type="range" id="progress-slider" min="0" max="100" value="0" step="0.1">
+          </div>
+          <span class="time-label" id="player-total-time">0:00</span>
+        </div>
+      </div>
+
+      <!-- 3. RIGHT: UTILITIES -->
+      <div class="player-utilities">
+        <button id="player-queue-btn" class="player-icon-btn" title="Play Queue"><i class="fa-solid fa-list-ul"></i></button>
+        <div class="volume-control">
+          <button id="player-volume-btn" class="player-icon-btn" title="Mute/Unmute"><i class="fa-solid fa-volume-high"></i></button>
+          <div class="volume-slider-container">
+            <div class="volume-slider-track" id="volume-slider-bar">
+              <div class="volume-slider-fill" id="volume-slider-fill"></div>
+              <div class="volume-slider-thumb" id="volume-slider-thumb"></div>
+            </div>
+            <input type="range" id="volume-slider" min="0" max="100" value="80">
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Audio Element -->
+  <audio id="audio-engine"></audio>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

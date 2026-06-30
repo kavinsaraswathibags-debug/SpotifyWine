@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1c1124;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3d0c1e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0b060d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="moon-color" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#722f37;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" fill="url(#grad5)" />
+  
+  <!-- Stars -->
+  <circle cx="80" cy="110" r="1.5" fill="#ffffff" opacity="0.6" />
+  <circle cx="120" cy="80" r="1" fill="#ffffff" opacity="0.4" />
+  <circle cx="280" cy="90" r="1.5" fill="#ffffff" opacity="0.8" />
+  <circle cx="320" cy="150" r="1" fill="#ffffff" opacity="0.5" />
+  <circle cx="70" cy="230" r="2" fill="#ffffff" opacity="0.7" />
+  <circle cx="300" cy="270" r="1.5" fill="#ffffff" opacity="0.4" />
+  
+  <!-- Moon -->
+  <path d="M225,120 A 70 70 0 1 0 280,225 A 60 60 0 1 1 225,120 Z" fill="url(#moon-color)" opacity="0.9" />
+
+  <!-- Heart silhouette or couple silhouette -->
+  <g transform="translate(140, 200)" opacity="0.8">
+    <path d="M40,25 C40,25 35,5 15,5 C-5,5 -15,25 -15,45 C-15,70 15,90 40,110 C65,90 95,70 95,45 C95,25 85,5 65,5 C45,5 40,25 40,25 Z" fill="none" stroke="#722f37" stroke-width="2" />
+    <!-- Wave lines representing sound -->
+    <path d="M-5,45 Q15,35 40,45 T85,45" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.5" />
+  </g>
+
+  <!-- Text -->
+  <text x="200" y="60" font-family="'Outfit', 'Inter', sans-serif" font-size="24" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="3">MOUNA RAGAM</text>
+  <text x="200" y="365" font-family="'Outfit', 'Inter', sans-serif" font-size="14" font-weight="600" fill="#722f37" text-anchor="middle" letter-spacing="2">MELODIOUS LOVE</text>
+</svg>
