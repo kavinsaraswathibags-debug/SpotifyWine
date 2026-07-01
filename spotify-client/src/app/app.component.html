@@ -1,0 +1,134 @@
+<div id="app-container">
+  <!-- SIDEBAR (Left) -->
+  <app-sidebar></app-sidebar>
+
+  <!-- MAIN PANEL (Center) -->
+  <main class="main-panel">
+    <!-- TOP BAR -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="nav-arrows">
+          <button class="arrow-btn" title="Go back" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="arrow-btn" title="Go forward" onclick="history.forward()"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <div class="top-bar-right">
+        <div id="db-indicator" 
+             [class.db-indicator-offline]="authService.isDatabaseFallback()"
+             [class.db-indicator-online]="!authService.isDatabaseFallback()"
+             title="Connection status">
+          <i class="fa-solid fa-database"></i> 
+          <span>{{ authService.isDatabaseFallback() ? 'Local JSON Active' : 'MongoDB Connected' }}</span>
+        </div>
+        
+        @if (!authService.isLoggedIn()) {
+          <button class="btn btn-wine btn-small" routerLink="/auth">Log In</button>
+        } @else {
+          <span class="top-user-greeting">Hi, {{ authService.currentUser()?.username }}</span>
+        }
+      </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+    <div class="content-wrapper">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <!-- QUEUE DRAWER (Right) -->
+  @if (isQueueOpen()) {
+    <app-queue-drawer (close)="isQueueOpen.set(false)"></app-queue-drawer>
+  }
+
+  <!-- BOTTOM MEDIA PLAYER CONTROLLER -->
+  <app-player-bar (toggleQueue)="toggleQueue()"></app-player-bar>
+
+  <!-- NOW PLAYING POPUP MODULE OVERLAY -->
+  @if (audioService.isPopupOpen() && audioService.currentSong(); as song) {
+    <div class="now-playing-popup-overlay" (click)="audioService.isPopupOpen.set(false)">
+      <div class="now-playing-popup-card" (click)="$event.stopPropagation()">
+        
+        <!-- CLOSE BUTTON -->
+        <button class="now-playing-close-btn" (click)="audioService.isPopupOpen.set(false)" title="Close Player Details">
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+
+        <!-- ALBUM PROFILE IMAGE -->
+        <div class="now-playing-profile-wrapper">
+          <img [src]="song.cover" alt="Song Cover" class="now-playing-profile-img">
+        </div>
+
+        <!-- ANIMATED EQUALIZER SOUND WAVE BARS -->
+        <div class="now-playing-visualizer" title="Equalizer Sound Waves">
+          @for (barHeight of visualizerBars(); track $index) {
+            <div class="vis-bar" [style.height.px]="barHeight"></div>
+          }
+        </div>
+
+        <!-- SONG METADATA -->
+        <div class="now-playing-meta">
+          <h2 class="now-playing-title">{{ song.title }}</h2>
+          <p class="now-playing-artist">{{ song.artist }}</p>
+          <span class="now-playing-album-tag">Album: {{ song.album }}</span>
+        </div>
+
+        <!-- SONG TRACKING BAR (SEEK BAR) -->
+        <div class="now-playing-progress-wrapper">
+          <span class="progress-time">{{ formatTime(audioService.currentTime()) }}</span>
+          <input type="range" class="progress-range-slider" min="0" [max]="audioService.duration() || 100" step="1"
+                 [value]="audioService.currentTime()"
+                 (input)="seekSong($event)">
+          <span class="progress-time">{{ formatTime(audioService.duration()) }}</span>
+        </div>
+
+        <!-- CONTROL BUTTONS -->
+        <div class="now-playing-controls">
+          <button class="now-playing-control-btn btn-sec" title="Previous Song" (click)="audioService.prev()">
+            <i class="fa-solid fa-backward-step"></i>
+          </button>
+          
+          <button class="now-playing-play-circle btn-wine" title="Play/Pause" (click)="audioService.togglePlay()">
+            <i class="fa-solid" [class.fa-play]="!audioService.isPlaying()" [class.fa-pause]="audioService.isPlaying()"></i>
+          </button>
+
+          <button class="now-playing-control-btn btn-sec" title="Next Song" (click)="audioService.next()">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+        </div>
+
+        <!-- VOLUME CONTROLLER -->
+        <div class="now-playing-volume-wrapper">
+          <i class="fa-solid" 
+             [class.fa-volume-xmark]="audioService.isMuted() || audioService.volume() === 0"
+             [class.fa-volume-low]="!audioService.isMuted() && audioService.volume() > 0 && audioService.volume() <= 0.4"
+             [class.fa-volume-high]="!audioService.isMuted() && audioService.volume() > 0.4"
+             style="color: var(--text-sub); cursor: pointer;"
+             (click)="audioService.toggleMute()">
+          </i>
+          <input type="range" class="volume-range-slider" min="0" max="1" step="0.01" 
+                 [value]="audioService.isMuted() ? 0 : audioService.volume()" 
+                 (input)="setVolume($event)">
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <div class="mobile-bottom-nav">
+    <a routerLink="/" routerLinkActive="active-mobile" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link">
+      <i class="fa-solid fa-house"></i>
+      <span>Home</span>
+    </a>
+    <a routerLink="/search" routerLinkActive="active-mobile" class="mobile-nav-link">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span>Search</span>
+    </a>
+    <a routerLink="/liked" routerLinkActive="active-mobile" class="mobile-nav-link">
+      <i class="fa-solid fa-heart"></i>
+      <span>Liked</span>
+    </a>
+  </div>
+</div>
+

@@ -1,0 +1,16 @@
+/* Player bar component CSS overrides inherit from global styles.css */
+.repeat-one-indicator {
+  position: absolute;
+  font-size: 8px;
+  background: var(--wine-primary);
+  color: white;
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  bottom: 0px;
+  right: 0px;
+}

@@ -1,0 +1,147 @@
+<div class="view-panel">
+  <!-- PLAYLIST HEADER BANNER -->
+  <div class="playlist-header-banner custom-playlist-banner">
+    <div class="playlist-cover custom-playlist-cover">
+      @if (isFeatured()) {
+        <img [src]="playlistCover()" alt="Cover" style="width:100%; height:100%; object-fit:cover; border-radius:4px;">
+      } @else {
+        <i class="fa-solid fa-music"></i>
+      }
+    </div>
+    <div class="playlist-info">
+      <span class="playlist-type">PLAYLIST</span>
+      <h1 id="playlist-detail-title">{{ playlistName() }}</h1>
+      <div class="playlist-meta">
+        <span class="playlist-owner">{{ playlistOwner() }}</span>
+        <span class="bullet">•</span>
+        <span>{{ playlistSongs().length }} songs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONS ROW -->
+  <div class="playlist-actions-row">
+    <button class="btn-play-playlist btn-wine" 
+            [disabled]="playlistSongs().length === 0" 
+            (click)="playPlaylist()">
+      <i class="fa-solid fa-play"></i>
+    </button>
+    @if (!isFeatured()) {
+      <button class="btn-delete-playlist" title="Delete Playlist" (click)="deletePlaylist()">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+    }
+  </div>
+
+  <!-- SONGS TABLE -->
+  <div class="section-container">
+    <h3>Songs in Playlist</h3>
+    <div class="songs-table-container">
+      <table class="songs-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-title">Title</th>
+            <th class="col-album">Album</th>
+            <th class="col-category">Mood</th>
+            @if (!isFeatured()) {
+              <th class="col-action">Remove</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (song of playlistSongs(); track song.id; let idx = $index) {
+            <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+              <td class="col-num">
+                <div class="song-row-num">
+                  <span class="row-num-text">{{ idx + 1 }}</span>
+                  <span class="row-play-icon"><i class="fa-solid fa-play"></i></span>
+                </div>
+              </td>
+              <td class="col-title">
+                <div class="song-title-cell">
+                  <img class="song-cover-mini" [src]="song.cover" alt="cover">
+                  <div class="song-title-meta">
+                    <span class="song-title-text">{{ song.title }}</span>
+                    <span class="song-artist-text">{{ song.artist }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="col-album">{{ song.album }}</td>
+              <td class="col-category">{{ song.category }}</td>
+              @if (!isFeatured()) {
+                <td class="col-action">
+                  <button class="btn-remove-from-playlist" title="Remove from playlist" 
+                          (click)="removeTrack(song.id, $event)">
+                    <i class="fa-solid fa-circle-minus"></i>
+                  </button>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px 0;">
+                No songs in this playlist. 
+                @if (!isFeatured()) {
+                  Add recommended songs below!
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADD RECOMMENDED SONGS SECTION (Only for custom playlists) -->
+  @if (!isFeatured()) {
+    <div class="section-container playlist-add-songs-sec">
+      <hr class="divider">
+      <h3>Recommended Songs</h3>
+      <p>Quickly add songs from the catalog to this playlist:</p>
+      
+      <div class="songs-table-container">
+        <table class="songs-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-title">Title</th>
+              <th class="col-album">Album</th>
+              <th class="col-action">Add</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (song of recommendedSongs(); track song.id; let idx = $index) {
+              <tr>
+                <td class="col-num">{{ idx + 1 }}</td>
+                <td class="col-title">
+                  <div class="song-title-cell">
+                    <img class="song-cover-mini" [src]="song.cover" alt="cover" style="width:30px; height:30px;">
+                    <div class="song-title-meta">
+                      <span class="song-title-text" style="font-size:12px;">{{ song.title }}</span>
+                      <span class="song-artist-text">{{ song.artist }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="col-album" style="font-size:12px;">{{ song.album }}</td>
+                <td class="col-action">
+                  <button class="btn-add-to-playlist btn" 
+                          style="background-color: var(--border-color); color: var(--text-main); font-size:11px; padding: 4px 10px;"
+                          (click)="addTrack(song.id, $event)">
+                    Add
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 16px 0;">
+                  No new recommendations available. All songs have been added!
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

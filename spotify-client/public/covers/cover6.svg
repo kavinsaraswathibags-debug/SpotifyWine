@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad6" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1c0e11;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#501420;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gold-metallic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f3e5ab;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#aa7c11;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" fill="url(#grad6)" />
+  
+  <!-- Cassette Tape Body -->
+  <g transform="translate(80, 140)">
+    <!-- Main Outer Box -->
+    <rect x="0" y="0" width="240" height="150" rx="8" fill="#120c0e" stroke="url(#gold-metallic)" stroke-width="3" />
+    <rect x="10" y="10" width="220" height="130" rx="6" fill="#221316" />
+    
+    <!-- Cassette Label -->
+    <rect x="25" y="25" width="190" height="75" rx="4" fill="url(#gold-metallic)" />
+    <!-- Tape Window -->
+    <rect x="65" y="45" width="110" height="35" rx="3" fill="#120c0e" />
+    
+    <!-- Tape Reels -->
+    <circle cx="95" cy="62" r="14" fill="#501420" stroke="url(#gold-metallic)" stroke-width="1.5" />
+    <circle cx="95" cy="62" r="6" fill="#120c0e" />
+    <circle cx="145" cy="62" r="14" fill="#501420" stroke="url(#gold-metallic)" stroke-width="1.5" />
+    <circle cx="145" cy="62" r="6" fill="#120c0e" />
+    
+    <!-- Cassette Trapezoid Bottom -->
+    <path d="M45,128 L60,140 L180,140 L195,128 Z" fill="#120c0e" stroke="url(#gold-metallic)" stroke-width="1.5" />
+  </g>
+
+  <!-- Text -->
+  <text x="200" y="60" font-family="'Outfit', 'Inter', sans-serif" font-size="20" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="3">PAYANANGAL MUDIVATHILLAI</text>
+  <text x="200" y="365" font-family="'Outfit', 'Inter', sans-serif" font-size="14" font-weight="700" fill="url(#gold-metallic)" text-anchor="middle" letter-spacing="2">RETRO HITS</text>
+</svg>

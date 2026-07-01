@@ -1,0 +1,147 @@
+<div class="view-panel">
+  <div class="auth-page-container">
+    <div class="auth-card">
+      
+      <!-- TABS SELECTOR (Hidden in Forgot or Reset Mode) -->
+      @if (!forgotPasswordMode() && !resetPasswordMode()) {
+        <div class="auth-tabs">
+          <button class="auth-tab" [class.active]="activeTab() === 'login'" (click)="switchTab('login')">Log In</button>
+          <button class="auth-tab" [class.active]="activeTab() === 'register'" (click)="switchTab('register')">Register</button>
+        </div>
+      }
+
+      <!-- AUTH FORMS -->
+      <form class="auth-form" (submit)="onSubmit(); $event.preventDefault()">
+        
+        <!-- RESET PASSWORD MODE -->
+        @if (resetPasswordMode()) {
+          <h2>Reset Password</h2>
+          <p>Please enter your new password below.</p>
+
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword" required placeholder="Choose new password (min 6 chars)">
+            </div>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error">{{ errorMsg() }}</div>
+          }
+          @if (successMsg()) {
+            <div class="form-success">{{ successMsg() }}</div>
+          }
+
+          <button type="submit" class="btn btn-wine btn-block btn-large">Update Password</button>
+          <div class="auth-form-footer">
+            <a routerLink="/auth">Back to Log In</a>
+          </div>
+        }
+
+        <!-- FORGOT PASSWORD MODE -->
+        @else if (forgotPasswordMode()) {
+          <h2>Forgot Password</h2>
+          <p>Enter your registered email address. We will simulate sending a password reset link.</p>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-envelope"></i>
+              <input type="email" id="email" name="email" [(ngModel)]="email" required placeholder="Enter registered email">
+            </div>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error">{{ errorMsg() }}</div>
+          }
+          @if (successMsg()) {
+            <div class="form-success">
+              {{ successMsg() }}
+              @if (debugResetLink()) {
+                <div style="margin-top: 12px; font-size:12px;">
+                  <strong>Reset Link (Click below to test):</strong><br>
+                  <a [href]="debugResetLink()" style="color:var(--accent-gold); word-break: break-all;">{{ debugResetLink() }}</a>
+                </div>
+              }
+            </div>
+          }
+
+          <button type="submit" class="btn btn-wine btn-block btn-large">Send Reset Link</button>
+          <div class="auth-form-footer">
+            <a href="javascript:void(0)" (click)="toggleForgotPassword(false)">Back to Log In</a>
+          </div>
+        }
+
+        <!-- STANDARD REGISTER TAB -->
+        @else if (activeTab() === 'register') {
+          <h2>Create Account</h2>
+          <p>Register to save preferences. Fallback server active if MongoDB is offline.</p>
+
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="reg-username" name="username" [(ngModel)]="username" required placeholder="Choose a username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-email">Email ID</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-envelope"></i>
+              <input type="email" id="reg-email" name="email" [(ngModel)]="email" required placeholder="Enter your email ID">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="reg-password" name="password" [(ngModel)]="password" required placeholder="Choose a password (min 6 chars)">
+            </div>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error">{{ errorMsg() }}</div>
+          }
+
+          <button type="submit" class="btn btn-wine btn-block btn-large">Register</button>
+        }
+
+        <!-- STANDARD LOGIN TAB -->
+        @else {
+          <h2>Welcome Back</h2>
+          <p>Access your curated playlists and synced liked songs database.</p>
+
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="login-username" name="username" [(ngModel)]="username" required placeholder="Enter username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="login-password" name="password" [(ngModel)]="password" required placeholder="Enter password">
+            </div>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error">{{ errorMsg() }}</div>
+          }
+
+          <button type="submit" class="btn btn-wine btn-block btn-large">Log In</button>
+          
+          <div class="auth-form-footer">
+            <a href="javascript:void(0)" (click)="toggleForgotPassword(true)">Forgot Password?</a>
+          </div>
+        }
+
+      </form>
+    </div>
+  </div>
+</div>

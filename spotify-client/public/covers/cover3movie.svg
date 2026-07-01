@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <!-- Deep Red-Wine/Black gradient to align with our theme -->
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#800020;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d0507;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffe259;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffa751;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" fill="url(#grad1)" />
+  
+  <!-- Artwork details -->
+  <circle cx="200" cy="200" r="130" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.3" />
+  <circle cx="200" cy="200" r="110" fill="none" stroke="url(#gold)" stroke-width="1" opacity="0.2" />
+  
+  <!-- Vinyl record -->
+  <circle cx="200" cy="200" r="90" fill="#0b0708" stroke="#3d0c11" stroke-width="6" />
+  <circle cx="200" cy="200" r="80" fill="none" stroke="#221114" stroke-width="1" />
+  <circle cx="200" cy="200" r="70" fill="none" stroke="#221114" stroke-width="1" />
+  <circle cx="200" cy="200" r="60" fill="none" stroke="#221114" stroke-width="1" />
+  <circle cx="200" cy="200" r="50" fill="none" stroke="#221114" stroke-width="1" />
+  
+  <!-- Vinyl Center Label -->
+  <circle cx="200" cy="200" r="35" fill="url(#gold)" />
+  
+  <!-- Iconic giant "3" in the center -->
+  <text x="200" y="212" font-family="'Outfit', 'Inter', sans-serif" font-size="34" font-weight="900" fill="#0d0507" text-anchor="middle">3</text>
+  
+  <!-- Subtle decorative shapes -->
+  <circle cx="200" cy="200" r="5" fill="none" stroke="#0d0507" stroke-width="1.5" />
+  
+  <!-- Hearts representing love and pain -->
+  <path d="M120,140 C110,120 80,120 80,145 C80,170 120,195 120,195 C120,195 160,170 160,145 C160,120 130,120 120,140 Z" fill="#800020" opacity="0.7" filter="url(#glow)" />
+  <path d="M280,260 C270,240 240,240 240,265 C240,290 280,315 280,315 C280,315 320,290 320,265 C320,240 290,240 280,260 Z" fill="#ffa751" opacity="0.5" filter="url(#glow)" />
+
+  <!-- Text -->
+  <text x="200" y="55" font-family="'Outfit', 'Inter', sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">THE MOVIE "3"</text>
+  <text x="200" y="370" font-family="'Outfit', 'Inter', sans-serif" font-size="14" font-weight="600" fill="url(#gold)" text-anchor="middle" letter-spacing="2">ANIRUDH RAVICHANDER HITS</text>
+</svg>

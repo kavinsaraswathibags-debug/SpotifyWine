@@ -1,0 +1,186 @@
+@if (authService.isAdmin()) {
+  <div class="view-panel">
+    <div class="admin-panel-header">
+      <h1>Admin Dashboard</h1>
+      <p>Administrative system management, song catalogue controller, and credentials overrides.</p>
+    </div>
+
+    <div class="admin-grid-layout">
+      <!-- LEFT PANEL: SETTINGS & UPLOADS -->
+      <div class="admin-controls-column">
+        
+        <!-- CARD 1: UPDATE CREDENTIALS -->
+        <div class="admin-card">
+          <h3>Update Admin Credentials</h3>
+          <p class="admin-card-desc">Modifies credentials dynamically inside config.env. Saves on disk and reloads process values.</p>
+          
+          <form (submit)="handleCredentialsUpdate(); $event.preventDefault()" class="admin-form">
+            <div class="form-group">
+              <label for="newUsername">New Admin Username</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-user-shield"></i>
+                <input type="text" id="newUsername" name="newUsername" [(ngModel)]="newUsername" required placeholder="Choose username">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Admin Password</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword" required placeholder="Choose password">
+              </div>
+            </div>
+
+            @if (credErrorMsg()) {
+              <div class="form-error">{{ credErrorMsg() }}</div>
+            }
+            @if (credSuccessMsg()) {
+              <div class="form-success">{{ credSuccessMsg() }}</div>
+            }
+
+            <button type="submit" class="btn btn-wine btn-block">Save and Restart Session</button>
+          </form>
+        </div>
+
+        <!-- CARD 2: UPLOAD SYSTEM SONG -->
+        <div class="admin-card">
+          <h3>Upload System Track</h3>
+          <p class="admin-card-desc">Add a new song to the general catalog. Supports file uploading or streaming URL links.</p>
+
+          <form (submit)="handleSongUpload(); $event.preventDefault()" class="admin-form">
+            <div class="form-group">
+              <label for="songTitle">Song Title *</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-music"></i>
+                <input type="text" id="songTitle" name="songTitle" [(ngModel)]="songTitle" required placeholder="e.g. Kolaveri Di">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="songArtist">Artist *</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="songArtist" name="songArtist" [(ngModel)]="songArtist" required placeholder="e.g. Anirudh Ravichander">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="songAlbum">Album/Movie *</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-compact-disc"></i>
+                <input type="text" id="songAlbum" name="songAlbum" [(ngModel)]="songAlbum" required placeholder="e.g. 3 Movie">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="songCategory">Category/Mood</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-tags"></i>
+                <input type="text" id="songCategory" name="songCategory" [(ngModel)]="songCategory" placeholder="e.g. Viral Hits">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Cover Art Image (Upload File OR Enter URL)</label>
+              <div class="file-input-wrapper">
+                <input type="file" id="admin-cover-input" accept="image/*" (change)="onCoverFileSelected($event)">
+              </div>
+              <div class="input-wrapper" style="margin-top: 8px;">
+                <i class="fa-solid fa-image"></i>
+                <input type="text" name="songCoverUrl" [(ngModel)]="songCoverUrl" placeholder="Or enter Cover Image URL">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Audio File (Upload File OR Enter Stream URL) *</label>
+              <div class="file-input-wrapper">
+                <input type="file" id="admin-audio-input" accept="audio/*" multiple (change)="onAudioFileSelected($event)">
+              </div>
+              <small style="display:block; margin-top: 4px; color: var(--text-sub); font-size:10px;">
+                Tip: You can select multiple MP3 files at once to upload in bulk! Metadata will be auto-parsed.
+              </small>
+              <div class="input-wrapper" style="margin-top: 8px;">
+                <i class="fa-solid fa-link"></i>
+                <input type="text" name="songStreamUrl" [(ngModel)]="songStreamUrl" placeholder="Or enter Stream URL Link">
+              </div>
+            </div>
+
+            @if (uploadErrorMsg()) {
+              <div class="form-error">{{ uploadErrorMsg() }}</div>
+            }
+            @if (uploadStatus()) {
+              <div class="form-success" style="background-color: rgba(212, 175, 55, 0.1); border-color: var(--accent-gold); color: var(--accent-gold);">
+                <i class="fa-solid fa-spinner fa-spin"></i> {{ uploadStatus() }}
+              </div>
+            }
+            @if (uploadSuccessMsg()) {
+              <div class="form-success">{{ uploadSuccessMsg() }}</div>
+            }
+
+            <button type="submit" class="btn btn-wine btn-block" [disabled]="isUploading()">
+              {{ isUploading() ? 'Uploading Files...' : 'Upload System Song' }}
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL: CATALOGUE LIST & DELETE DELETER -->
+      <div class="admin-catalog-column">
+        <div class="admin-card full-height">
+          <div class="admin-card-header">
+            <h3>Manage Songs Catalog</h3>
+            <span class="track-count">{{ apiService.allSongs().length }} songs</span>
+          </div>
+          
+          <div class="admin-table-container">
+            <table class="songs-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Album</th>
+                  <th>Uploaded By</th>
+                  <th style="text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (song of apiService.allSongs(); track song.id) {
+                  <tr>
+                    <td>
+                      <div class="song-title-cell">
+                        <img class="song-cover-mini" [src]="song.cover" alt="cover">
+                        <div class="song-title-meta">
+                          <span class="song-title-text">{{ song.title }}</span>
+                          <span class="song-artist-text">{{ song.artist }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ song.album }}</td>
+                    <td>
+                      <span class="uploader-badge" [class.badge-system]="song.uploadedBy === 'system'">
+                        {{ song.uploadedBy === 'system' ? 'System' : 'User' }}
+                      </span>
+                    </td>
+                    <td style="text-align: center;">
+                      <button class="btn-admin-delete" title="Delete track" (click)="deleteSong(song)">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="access-denied-wrapper">
+    <div class="access-denied-card">
+      <i class="fa-solid fa-user-lock"></i>
+      <h2>Access Denied</h2>
+      <p>Administrative privileges are required to view this panel.</p>
+      <button class="btn btn-wine btn-large" routerLink="/auth">Log In as Admin</button>
+    </div>
+  </div>
+}

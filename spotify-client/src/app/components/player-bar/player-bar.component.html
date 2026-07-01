@@ -1,0 +1,95 @@
+<footer class="player-bar">
+  <!-- 1. LEFT: TRACK DETAILS -->
+  <div class="player-track-info">
+    <div class="player-cover-container" (click)="audioService.currentSong() && audioService.isPopupOpen.set(true)" style="cursor: pointer;" title="Expand player view">
+      @if (audioService.currentSong(); as song) {
+        <img [src]="song.cover" alt="Song Cover" id="player-song-cover">
+      } @else {
+        <img src="/covers/cover1.svg" alt="Default Cover" id="player-song-cover">
+      }
+    </div>
+    <div class="player-song-details">
+      <span class="player-song-title" id="player-song-title">
+        {{ audioService.currentSong()?.title || 'Select a track' }}
+      </span>
+      <span class="player-song-artist" id="player-song-artist">
+        {{ audioService.currentSong()?.artist || 'to begin playing' }}
+      </span>
+    </div>
+    <button id="player-like-btn" class="player-icon-btn" title="Like Song" 
+            [disabled]="!audioService.currentSong() || !authService.token()"
+            (click)="toggleLike()">
+      <i [class]="isLiked() ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"></i>
+    </button>
+  </div>
+
+  <!-- 2. MIDDLE: PLAYBACK CONTROLS -->
+  <div class="player-controls-area">
+    <div class="player-buttons">
+      <button id="player-shuffle-btn" class="player-icon-btn" title="Shuffle" 
+              [class.active]="audioService.isShuffle()"
+              (click)="toggleShuffle()">
+        <i class="fa-solid fa-shuffle"></i>
+      </button>
+      <button id="player-prev-btn" class="player-icon-btn" title="Previous" (click)="prev()">
+        <i class="fa-solid fa-backward-step"></i>
+      </button>
+      <button id="player-play-btn" class="player-play-circle btn-wine" title="Play/Pause" (click)="playPause()">
+        <i class="fa-solid" [class.fa-play]="!audioService.isPlaying()" [class.fa-pause]="audioService.isPlaying()"></i>
+      </button>
+      <button id="player-next-btn" class="player-icon-btn" title="Next" (click)="next()">
+        <i class="fa-solid fa-forward-step"></i>
+      </button>
+      <button id="player-repeat-btn" class="player-icon-btn" title="Repeat"
+              [class.active]="audioService.isRepeat() > 0"
+              (click)="toggleRepeat()">
+        <i class="fa-solid" 
+           [class.fa-repeat]="audioService.isRepeat() <= 1"
+           [class.fa-rotate-left]="audioService.isRepeat() === 2"></i>
+        @if (audioService.isRepeat() === 2) {
+          <span class="repeat-one-indicator">1</span>
+        }
+      </button>
+    </div>
+    
+    <div class="player-progress-bar">
+      <span class="time-label">{{ formatTime(audioService.currentTime()) }}</span>
+      <div class="progress-slider-container">
+        <!-- Visual slider tracks -->
+        <div class="progress-slider-track">
+          <div class="progress-slider-fill" [style.width.%]="progressPercent()"></div>
+          <div class="progress-slider-thumb" [style.left.%]="progressPercent()"></div>
+        </div>
+        <!-- Real interactive slider -->
+        <input type="range" id="progress-slider" min="0" max="100" step="0.1" 
+               [value]="progressPercent()"
+               (input)="onProgressChange($event)">
+      </div>
+      <span class="time-label">{{ formatTime(audioService.duration()) }}</span>
+    </div>
+  </div>
+
+  <!-- 3. RIGHT: UTILITIES -->
+  <div class="player-utilities">
+    <button id="player-queue-btn" class="player-icon-btn" title="Play Queue" (click)="toggleQueue.emit()">
+      <i class="fa-solid fa-list-ul"></i>
+    </button>
+    <div class="volume-control">
+      <button id="player-volume-btn" class="player-icon-btn" title="Mute/Unmute" (click)="toggleMute()">
+        <i class="fa-solid" 
+           [class.fa-volume-xmark]="audioService.isMuted() || audioService.volume() === 0"
+           [class.fa-volume-low]="!audioService.isMuted() && audioService.volume() > 0 && audioService.volume() <= 0.4"
+           [class.fa-volume-high]="!audioService.isMuted() && audioService.volume() > 0.4"></i>
+      </button>
+      <div class="volume-slider-container">
+        <div class="volume-slider-track">
+          <div class="volume-slider-fill" [style.width.%]="volumePercent()"></div>
+          <div class="volume-slider-thumb" [style.left.%]="volumePercent()"></div>
+        </div>
+        <input type="range" id="volume-slider" min="0" max="100" 
+               [value]="volumePercent()"
+               (input)="onVolumeChange($event)">
+      </div>
+    </div>
+  </div>
+</footer>

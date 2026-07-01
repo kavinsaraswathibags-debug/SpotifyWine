@@ -17,7 +17,6 @@ function hasWritePermission(dir) {
 }
 
 // In serverless environments, the local task folder is read-only.
-// We fall back to the system temp directory if local path is not writable.
 let FALLBACK_FILE = path.join(__dirname, 'db_fallback.json');
 try {
   if (process.env.VERCEL || process.env.NOW_BUILDER || !hasWritePermission(__dirname)) {
@@ -35,9 +34,25 @@ function initFallbackDB() {
     const defaultData = {
       users: [],
       likedSongs: {}, // userId -> array of songIds
-      playlists: []   // array of { id, userId, name, songIds: [] }
+      playlists: [],   // array of { id, userId, name, songIds: [] }
+      songs: []        // array of dynamic songs
     };
     fs.writeFileSync(FALLBACK_FILE, JSON.stringify(defaultData, null, 2), 'utf-8');
+  } else {
+    // Migrate existing fallback files
+    try {
+      const data = JSON.parse(fs.readFileSync(FALLBACK_FILE, 'utf-8'));
+      let migrated = false;
+      if (!data.songs) {
+        data.songs = [];
+        migrated = true;
+      }
+      if (migrated) {
+        fs.writeFileSync(FALLBACK_FILE, JSON.stringify(data, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      console.error("Migration fallback error:", e);
+    }
   }
 }
 
@@ -49,7 +64,7 @@ function readFallbackData() {
     return JSON.parse(data);
   } catch (e) {
     console.error("Error reading fallback database file, resetting:", e);
-    return { users: [], likedSongs: {}, playlists: [] };
+    return { users: [], likedSongs: {}, playlists: [], songs: [] };
   }
 }
 
@@ -64,7 +79,10 @@ function writeFallbackData(data) {
 // Mongoose Schemas (if MongoDB is available)
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  email: { type: String, unique: true, sparse: true },
+  resetToken: { type: String },
+  resetTokenExpires: { type: Date }
 });
 
 const LikedSongsSchema = new mongoose.Schema({
@@ -78,15 +96,27 @@ const PlaylistSchema = new mongoose.Schema({
   songIds: { type: [String], default: [] }
 });
 
-let UserModel, LikedSongsModel, PlaylistModel;
+const SongSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  artist: { type: String, required: true },
+  album: { type: String, required: true },
+  year: { type: String },
+  category: { type: String },
+  cover: { type: String, default: '/covers/cover1.svg' },
+  localPath: { type: String },
+  streamUrl: { type: String, required: true },
+  uploadedBy: { type: String, default: 'system' } // 'system' or userId
+});
 
-// Connect to Database
+let UserModel, LikedSongsModel, PlaylistModel, SongModel;
+
+// Connection and Seeding
 async function connectDB(mongoUri) {
   const uri = mongoUri || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/spotify_prototype';
   console.log(`Attempting to connect to MongoDB at: ${uri}`);
   
   try {
-    // Set connection timeout to 4 seconds so it falls back quickly if MongoDB isn't running
     await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 4000
     });
@@ -95,7 +125,11 @@ async function connectDB(mongoUri) {
     UserModel = mongoose.model('User', UserSchema);
     LikedSongsModel = mongoose.model('LikedSongs', LikedSongsSchema);
     PlaylistModel = mongoose.model('Playlist', PlaylistSchema);
+    SongModel = mongoose.model('Song', SongSchema);
     useFallback = false;
+    
+    // Seed catalog in Mongo
+    await seedSongs();
   } catch (error) {
     console.warn("\n========================================================");
     console.warn("WARNING: Could not connect to MongoDB server.");
@@ -105,6 +139,38 @@ async function connectDB(mongoUri) {
     
     useFallback = true;
     initFallbackDB();
+    await seedSongs();
+  }
+}
+
+async function seedSongs() {
+  const seedFile = path.join(__dirname, 'songs.json');
+  if (!fs.existsSync(seedFile)) {
+    console.warn("Warning: songs.json seed file not found. Skipping seeding.");
+    return;
+  }
+
+  const defaultSongs = JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
+
+  if (useFallback) {
+    const data = readFallbackData();
+    if (data.songs.length === 0) {
+      console.log(`Seeding ${defaultSongs.length} songs into fallback database...`);
+      data.songs = defaultSongs.map(s => ({ ...s, uploadedBy: 'system' }));
+      writeFallbackData(data);
+    }
+  } else {
+    try {
+      const count = await SongModel.countDocuments();
+      if (count === 0) {
+        console.log(`Seeding ${defaultSongs.length} songs into MongoDB...`);
+        const songsWithUpload = defaultSongs.map(s => ({ ...s, uploadedBy: 'system' }));
+        await SongModel.insertMany(songsWithUpload);
+        console.log("Seeding complete in MongoDB.");
+      }
+    } catch (e) {
+      console.error("Error seeding MongoDB:", e);
+    }
   }
 }
 
@@ -114,34 +180,64 @@ const db = {
   isFallback: () => useFallback,
 
   // User Auth
-  async createUser(username, password) {
+  async createUser(username, password, email) {
     const cleanUsername = username.trim().toLowerCase();
+    const cleanEmail = email ? email.trim().toLowerCase() : null;
+    
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     if (useFallback) {
       const data = readFallbackData();
-      const existing = data.users.find(u => u.username === cleanUsername);
-      if (existing) {
+      const existingUser = data.users.find(u => u.username === cleanUsername);
+      if (existingUser) {
         throw new Error("Username already exists");
       }
+      if (cleanEmail) {
+        const existingEmail = data.users.find(u => u.email === cleanEmail);
+        if (existingEmail) {
+          throw new Error("Email already registered");
+        }
+      }
+      
       const userId = 'user_' + Date.now();
-      const newUser = { id: userId, username: cleanUsername, password: hashedPassword };
+      const newUser = { 
+        id: userId, 
+        username: cleanUsername, 
+        password: hashedPassword, 
+        email: cleanEmail,
+        resetToken: null,
+        resetTokenExpires: null
+      };
+      
       data.users.push(newUser);
       data.likedSongs[userId] = [];
       writeFallbackData(data);
-      return { id: userId, username: cleanUsername };
+      return { id: userId, username: cleanUsername, email: cleanEmail };
     } else {
-      const existing = await UserModel.findOne({ username: cleanUsername });
-      if (existing) {
+      const existingUser = await UserModel.findOne({ username: cleanUsername });
+      if (existingUser) {
         throw new Error("Username already exists");
       }
-      const user = new UserModel({ username: cleanUsername, password: hashedPassword });
+      if (cleanEmail) {
+        const existingEmail = await UserModel.findOne({ email: cleanEmail });
+        if (existingEmail) {
+          throw new Error("Email already registered");
+        }
+      }
+
+      const user = new UserModel({ 
+        username: cleanUsername, 
+        password: hashedPassword, 
+        email: cleanEmail 
+      });
       await user.save();
+
       // Initialize empty liked songs document
       const liked = new LikedSongsModel({ userId: user._id, songIds: [] });
       await liked.save();
-      return { id: user._id.toString(), username: cleanUsername };
+
+      return { id: user._id.toString(), username: cleanUsername, email: cleanEmail };
     }
   },
 
@@ -154,14 +250,129 @@ const db = {
       
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return null;
-      return { id: user.id, username: user.username };
+      return { id: user.id, username: user.username, email: user.email };
     } else {
       const user = await UserModel.findOne({ username: cleanUsername });
       if (!user) return null;
       
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return null;
-      return { id: user._id.toString(), username: user.username };
+      return { id: user._id.toString(), username: user.username, email: user.email };
+    }
+  },
+
+  // Password Recovery Flow
+  async generateResetToken(email) {
+    const cleanEmail = email.trim().toLowerCase();
+    const token = 'token_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    const expires = new Date(Date.now() + 3600000); // 1 hour validity
+
+    if (useFallback) {
+      const data = readFallbackData();
+      const user = data.users.find(u => u.email === cleanEmail);
+      if (!user) throw new Error("No user found with that email address.");
+
+      user.resetToken = token;
+      user.resetTokenExpires = expires.toISOString();
+      writeFallbackData(data);
+      return token;
+    } else {
+      const user = await UserModel.findOne({ email: cleanEmail });
+      if (!user) throw new Error("No user found with that email address.");
+
+      user.resetToken = token;
+      user.resetTokenExpires = expires;
+      await user.save();
+      return token;
+    }
+  },
+
+  async resetPassword(token, newPassword) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    if (useFallback) {
+      const data = readFallbackData();
+      const user = data.users.find(u => u.resetToken === token);
+      if (!user) throw new Error("Invalid or expired reset token.");
+      
+      const expires = new Date(user.resetTokenExpires);
+      if (expires.getTime() < Date.now()) {
+        throw new Error("Password reset token has expired.");
+      }
+
+      user.password = hashedPassword;
+      user.resetToken = null;
+      user.resetTokenExpires = null;
+      writeFallbackData(data);
+      return { success: true };
+    } else {
+      const user = await UserModel.findOne({
+        resetToken: token,
+        resetTokenExpires: { $gt: new Date() }
+      });
+      if (!user) throw new Error("Invalid or expired reset token.");
+
+      user.password = hashedPassword;
+      user.resetToken = undefined;
+      user.resetTokenExpires = undefined;
+      await user.save();
+      return { success: true };
+    }
+  },
+
+  // Dynamic Songs Catalog
+  async getSongs() {
+    if (useFallback) {
+      const data = readFallbackData();
+      return data.songs;
+    } else {
+      return await SongModel.find({});
+    }
+  },
+
+  async addSong(songData) {
+    const songId = 'track-' + Date.now();
+    const newSong = {
+      id: songId,
+      title: songData.title,
+      artist: songData.artist,
+      album: songData.album,
+      year: songData.year || '2026',
+      category: songData.category || 'Uploaded Hits',
+      cover: songData.cover || '/covers/cover1.svg',
+      localPath: songData.localPath || '',
+      streamUrl: songData.streamUrl,
+      uploadedBy: songData.uploadedBy || 'system'
+    };
+
+    if (useFallback) {
+      const data = readFallbackData();
+      data.songs.push(newSong);
+      writeFallbackData(data);
+      return newSong;
+    } else {
+      const song = new SongModel(newSong);
+      await song.save();
+      return song;
+    }
+  },
+
+  async deleteSong(songId) {
+    if (useFallback) {
+      const data = readFallbackData();
+      const initialLength = data.songs.length;
+      const song = data.songs.find(s => s.id === songId);
+      if (!song) throw new Error("Song not found");
+
+      data.songs = data.songs.filter(s => s.id !== songId);
+      writeFallbackData(data);
+      return song;
+    } else {
+      const song = await SongModel.findOne({ id: songId });
+      if (!song) throw new Error("Song not found");
+      await SongModel.deleteOne({ id: songId });
+      return song;
     }
   },
 

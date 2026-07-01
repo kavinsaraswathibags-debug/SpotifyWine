@@ -1,0 +1,85 @@
+<div class="view-panel">
+  <!-- PLAYLIST HEADER BANNER -->
+  <div class="playlist-header-banner liked-banner">
+    <div class="playlist-cover liked-cover">
+      <i class="fa-solid fa-heart"></i>
+    </div>
+    <div class="playlist-info">
+      <span class="playlist-type">PLAYLIST</span>
+      <h1 id="liked-playlist-title">Liked Songs</h1>
+      <div class="playlist-meta">
+        <span class="playlist-owner">{{ authService.currentUser()?.username || 'Guest' }}</span>
+        <span class="bullet">•</span>
+        <span>{{ likedSongs().length }} songs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONS ROW -->
+  <div class="playlist-actions-row">
+    <button class="btn-play-playlist btn-wine" 
+            [disabled]="likedSongs().length === 0" 
+            (click)="playLikedSongs()">
+      <i class="fa-solid fa-play"></i>
+    </button>
+    @if (likedSongs().length === 0) {
+      <span class="liked-actions-info">
+        @if (!authService.token()) {
+          Please log in to save and stream your liked songs.
+        } @else {
+          You haven't liked any songs yet. Click the heart icon on any song to save it!
+        }
+      </span>
+    }
+  </div>
+
+  <!-- SONGS LIST -->
+  @if (likedSongs().length > 0) {
+    <div class="section-container">
+      <div class="songs-table-container">
+        <table class="songs-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-title">Title</th>
+              <th class="col-album">Album</th>
+              <th class="col-category">Mood</th>
+              <th class="col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (song of likedSongs(); track song.id; let idx = $index) {
+              <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+                <td class="col-num">
+                  <div class="song-row-num">
+                    <span class="row-num-text">{{ idx + 1 }}</span>
+                    <span class="row-play-icon"><i class="fa-solid fa-play"></i></span>
+                  </div>
+                </td>
+                <td class="col-title">
+                  <div class="song-title-cell">
+                    <img class="song-cover-mini" [src]="song.cover" alt="cover">
+                    <div class="song-title-meta">
+                      <span class="song-title-text">{{ song.title }}</span>
+                      <span class="song-artist-text">{{ song.artist }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="col-album">{{ song.album }}</td>
+                <td class="col-category">{{ song.category }}</td>
+                <td class="col-action">
+                  <button class="song-row-like-btn" title="Remove from Likes" (click)="toggleLike(song, $event)">
+                    <i class="fa-solid fa-heart liked"></i>
+                  </button>
+                  <button class="song-row-action-btn" title="More options" (click)="showOptions(song, $event)">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

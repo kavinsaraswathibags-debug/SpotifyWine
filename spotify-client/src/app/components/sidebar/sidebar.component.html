@@ -1,0 +1,99 @@
+<aside class="sidebar">
+  <div class="logo-container" routerLink="/">
+    <i class="fa-brands fa-spotify logo-icon"></i>
+    <span class="logo-text">Spotify<span class="logo-sub">Wine</span></span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul>
+      <li class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="fa-solid fa-house"></i>
+        <span>Home</span>
+      </li>
+      <li class="nav-item" routerLink="/search" routerLinkActive="active">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span>Search</span>
+      </li>
+      <li class="nav-item" routerLink="/liked" routerLinkActive="active">
+        <i class="fa-solid fa-heart"></i>
+        <span>Liked Songs</span>
+      </li>
+      @if (authService.isAdmin()) {
+        <li class="nav-item" routerLink="/admin" routerLinkActive="active">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Admin Panel</span>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <div class="library-container">
+    <div class="library-header">
+      <div class="library-title">
+        <i class="fa-solid fa-book-open"></i>
+        <span>Your Library</span>
+      </div>
+      <button id="create-playlist-btn" title="Create Playlist" (click)="createPlaylist()">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- PLAYLISTS LIST -->
+    <div class="playlists-list">
+      <!-- Static Featured Playlists -->
+      <div class="playlist-sidebar-item" routerLink="/playlist/featured-3" routerLinkActive="active-playlist">
+        <i class="fa-solid fa-compact-disc playlist-item-icon"></i>
+        <div class="playlist-item-meta">
+          <span class="playlist-item-name">3 Movie (Featured)</span>
+          <span class="playlist-item-sub">Anirudh Ravichander</span>
+        </div>
+      </div>
+
+      <!-- User Custom Playlists -->
+      @if (authService.isLoggedIn()) {
+        @if (apiService.playlists().length === 0) {
+          <div class="sidebar-placeholder-text">Create your first custom playlist!</div>
+        }
+        @for (playlist of apiService.playlists(); track playlist.id) {
+          <div class="playlist-sidebar-item" [routerLink]="['/playlist/custom-' + playlist.id]" routerLinkActive="active-playlist">
+            <i class="fa-solid fa-music playlist-item-icon"></i>
+            <div class="playlist-item-meta">
+              <span class="playlist-item-name">{{ playlist.name }}</span>
+              <span class="playlist-item-sub">Playlist • {{ playlist.songIds.length }} songs</span>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="sidebar-placeholder-text">Log in to create custom playlists.</div>
+      }
+    </div>
+  </div>
+
+  <!-- USER FOOTER SECTION -->
+  <div class="sidebar-user-section">
+    <!-- Guest View -->
+    @if (!authService.isLoggedIn()) {
+      <div class="auth-prompt">
+        <p>Login to save your likes and playlists</p>
+        <button class="btn btn-wine btn-block" routerLink="/auth">Log In</button>
+      </div>
+    } @else {
+      <!-- User View -->
+      <div class="user-profile-card">
+        <div class="user-avatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="user-details">
+          <span class="user-name">{{ authService.currentUser()?.username }}</span>
+          <span class="user-status">
+            <i class="fa-solid fa-database" [style.color]="authService.isDatabaseFallback() ? '#ff5c5c' : '#1db954'"></i>
+            {{ authService.isDatabaseFallback() ? 'Local Fallback' : 'Mongo Sync' }}
+          </span>
+        </div>
+        <button class="btn-logout" title="Log Out" (click)="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    }
+  </div>
+</aside>

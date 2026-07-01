@@ -1,0 +1,134 @@
+.admin-panel-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+.admin-panel-header h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+}
+.admin-panel-header p {
+  color: var(--text-sub);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.admin-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+}
+.admin-card h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.admin-card-desc {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.admin-card-header h3 {
+  margin-bottom: 0;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.file-input-wrapper {
+  background: #181818;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.file-input-wrapper input {
+  color: var(--text-sub);
+  font-size: 12px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.uploader-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #242424;
+  color: var(--text-sub);
+}
+.badge-system {
+  background: rgba(128, 0, 32, 0.25);
+  color: var(--accent-gold);
+  border: 0.5px solid rgba(212, 175, 55, 0.3);
+}
+
+.btn-admin-delete {
+  background: transparent;
+  border: none;
+  color: #ff5c5c;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-admin-delete:hover {
+  background-color: rgba(255, 92, 92, 0.1);
+  transform: scale(1.15);
+}
+
+.admin-table-container {
+  max-height: 680px;
+  overflow-y: auto;
+}
+
+.admin-table-container::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: #282828;
+  border-radius: 3px;
+}
+.admin-table-container::-webkit-scrollbar-thumb:hover {
+  background: #3e3e3e;
+}
+
+@media (max-width: 992px) {
+  .admin-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,94 @@
+<div class="view-panel">
+  <!-- SEARCH INPUT CONTAINER (Responsive layout placement) -->
+  <div class="search-view-header">
+    <div class="search-bar-inline">
+      <i class="fa-solid fa-magnifying-glass search-bar-icon"></i>
+      <input type="text" 
+             placeholder="What do you want to play?" 
+             [value]="searchQuery()" 
+             (input)="onSearchInput($event)"
+             autocomplete="off">
+      @if (searchQuery()) {
+        <button class="search-clear-inline" (click)="clearSearch()"><i class="fa-solid fa-xmark"></i></button>
+      }
+    </div>
+  </div>
+
+  <div class="section-container">
+    @if (!searchQuery()) {
+      <!-- BROWSE GENRES GRID -->
+      <div id="search-browse-all">
+        <h3>Browse All Categories</h3>
+        <div class="browse-grid">
+          @for (genre of genres; track genre.title) {
+            <div class="browse-card" [style.background-color]="genre.color" (click)="selectGenre(genre.title)">
+              <h4>{{ genre.title }}</h4>
+              <div class="browse-card-bg">
+                <i class="fa-solid" [class]="genre.icon"></i>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- SEARCH RESULTS SONGS TABLE -->
+      <div class="section-header">
+        <h2>Search Results for "{{ searchQuery() }}"</h2>
+        <span class="track-count">{{ filteredSongs().length }} songs</span>
+      </div>
+      
+      <div class="songs-table-container">
+        <table class="songs-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-title">Title</th>
+              <th class="col-album">Album</th>
+              <th class="col-category">Mood</th>
+              <th class="col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (song of filteredSongs(); track song.id; let idx = $index) {
+              <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+                <td class="col-num">
+                  <div class="song-row-num">
+                    <span class="row-num-text">{{ idx + 1 }}</span>
+                    <span class="row-play-icon"><i class="fa-solid fa-play"></i></span>
+                  </div>
+                </td>
+                <td class="col-title">
+                  <div class="song-title-cell">
+                    <img class="song-cover-mini" [src]="song.cover" alt="cover">
+                    <div class="song-title-meta">
+                      <span class="song-title-text">{{ song.title }}</span>
+                      <span class="song-artist-text">{{ song.artist }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="col-album">{{ song.album }}</td>
+                <td class="col-category">{{ song.category }}</td>
+                <td class="col-action">
+                  <button class="song-row-like-btn" title="Like song" 
+                          [disabled]="!authService.token()"
+                          (click)="toggleLike(song, $event)">
+                    <i [class]="isLiked(song.id) ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"></i>
+                  </button>
+                  <button class="song-row-action-btn" title="More options" (click)="showOptions(song, $event)">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px 0;">
+                  No songs matching your search query. Try searching for "Anirudh", "Ilaiyaraaja", or a movie name like "3".
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

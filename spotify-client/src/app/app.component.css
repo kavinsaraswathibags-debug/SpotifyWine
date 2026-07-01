@@ -1,0 +1,10 @@
+/* App component CSS overrides inherit from global styles.css */
+.top-user-greeting {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--card-bg-hover);
+  padding: 6px 14px;
+  border-radius: 500px;
+  border: 1px solid var(--border-color);
+}

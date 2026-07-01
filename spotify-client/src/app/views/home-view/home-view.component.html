@@ -1,0 +1,231 @@
+<div class="view-panel">
+  <!-- WELCOME HERO BANNER -->
+  <div class="welcome-banner">
+    <div class="banner-overlay"></div>
+    <div class="banner-content">
+      <span class="banner-tag">SPOTIFY EXCLUSIVE</span>
+      <h1>Maestro Ilaiyaraaja Hits</h1>
+      <p>Experience handpicked timeless masterpieces of the music wizard, colored in our custom rich wine aesthetic. Stream and save your absolute favorites.</p>
+      <button class="btn btn-wine btn-large" id="play-all-hero-btn" (click)="playAllHero()">
+        <i class="fa-solid fa-play"></i> Play All
+      </button>
+    </div>
+  </div>
+
+  <!-- FEATURED ALBUMS SECTION -->
+  <div class="section-container">
+    <h2>Featured Albums & Playlists</h2>
+    <div class="categories-grid">
+      <!-- 3 Movie Album Card -->
+      <div class="category-card" routerLink="/playlist/featured-3">
+        <div class="category-cover-wrapper">
+          <img src="/covers/cover3movie.svg" alt="3 Movie Album Cover">
+          <button class="card-play-btn" title="Play 3 Album">
+            <i class="fa-solid fa-play"></i>
+          </button>
+        </div>
+        <h3>3 Movie</h3>
+        <p>Sensational debut album by Anirudh Ravichander</p>
+      </div>
+
+      <!-- Ilaiyaraaja Hits Album Card -->
+      <div class="category-card" (click)="playAllHero()">
+        <div class="category-cover-wrapper">
+          <img src="/covers/cover1.svg" alt="Ilaiyaraaja Hits Cover">
+          <button class="card-play-btn" title="Play Maestro Classics">
+            <i class="fa-solid fa-play"></i>
+          </button>
+        </div>
+        <h3>Ilaiyaraaja Hits</h3>
+        <p>Timeless hits from the music maestro</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALBUM CATEGORIES GRID -->
+  <div class="section-container">
+    <h2>Select Album Moods</h2>
+    <div class="categories-grid">
+      @for (cat of categories; track cat.title) {
+        <div class="category-card" (click)="onCategoryClick(cat)">
+          <div class="category-cover-wrapper">
+            <img [src]="cat.cover" [alt]="cat.title">
+            <button class="card-play-btn" (click)="playCategory(cat.title, $event)" title="Play category">
+              <i class="fa-solid fa-play"></i>
+            </button>
+          </div>
+          <h3>{{ cat.title }}</h3>
+          <p>{{ cat.desc }}</p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- CATALOG SONGS LIST -->
+  <div class="section-container">
+    <div class="section-header catalog-tabs-header">
+      <div class="catalog-filters">
+        <button class="filter-tab" [class.active]="activeFilter() === 'all'" (click)="setFilter('all')">All Songs</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'maestro'" (click)="setFilter('maestro')">Maestro's Hits</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'movie3'" (click)="setFilter('movie3')">3 Movie</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'uploads'" (click)="setFilter('uploads')">Shared Uploads</button>
+      </div>
+      
+      <div class="catalog-actions">
+        @if (authService.isLoggedIn()) {
+          <button class="btn btn-wine btn-small" (click)="openUploadModal()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Share Song
+          </button>
+        }
+        <span class="track-count">{{ filteredSongs().length }} songs</span>
+      </div>
+    </div>
+    
+    <div class="songs-table-container">
+      <table class="songs-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-title">Title</th>
+            <th class="col-album">Album</th>
+            <th class="col-category">Mood/Category</th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (song of filteredSongs(); track song.id; let idx = $index) {
+            <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+              <td class="col-num">
+                <div class="song-row-num">
+                  <span class="row-num-text">{{ idx + 1 }}</span>
+                  <span class="row-play-icon"><i class="fa-solid fa-play"></i></span>
+                </div>
+              </td>
+              <td class="col-title">
+                <div class="song-title-cell">
+                  <img class="song-cover-mini" [src]="song.cover" alt="cover">
+                  <div class="song-title-meta">
+                    <span class="song-title-text">{{ song.title }}</span>
+                    <span class="song-artist-text">{{ song.artist }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="col-album">{{ song.album }}</td>
+              <td class="col-category">
+                <span class="category-tag">{{ song.category }}</span>
+              </td>
+              <td class="col-action">
+                <!-- Delete button (visible to owner/admin) -->
+                @if (canDeleteSong(song)) {
+                  <button class="song-row-delete-btn" title="Delete song" (click)="deleteSong(song, $event)">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                }
+                <button class="song-row-like-btn" title="Like song" 
+                        [disabled]="!authService.token()"
+                        (click)="toggleLike(song, $event)">
+                  <i [class]="isLiked(song.id) ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"></i>
+                </button>
+                <button class="song-row-action-btn" title="More options" (click)="showOptions(song, $event)">
+                  <i class="fa-solid fa-ellipsis"></i>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 48px 0;">
+                No songs in this list. Upload or select another filter!
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD SONG DIALOG OVERLAY MODAL -->
+@if (isUploadModalOpen()) {
+  <div class="modal-overlay" (click)="closeUploadModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Upload & Share a Song</h2>
+        <button class="modal-close-btn" (click)="closeUploadModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <form (submit)="handleSongUpload(); $event.preventDefault()" class="modal-form">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-music"></i>
+            <input type="text" id="title" name="songTitle" [(ngModel)]="songTitle" required placeholder="Enter track title">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="artist">Artist *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="artist" name="songArtist" [(ngModel)]="songArtist" required placeholder="Enter artist name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="album">Album/Movie *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-compact-disc"></i>
+            <input type="text" id="album" name="songAlbum" [(ngModel)]="songAlbum" required placeholder="Enter movie/album name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category/Mood Tag</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-tags"></i>
+            <input type="text" id="category" name="songCategory" [(ngModel)]="songCategory" placeholder="e.g. Shared Tracks, Melodies">
+          </div>
+        </div>
+
+        <!-- Cover art selection -->
+        <div class="form-group">
+          <label>Cover Art Image (Upload File OR Enter URL)</label>
+          <div class="file-input-box">
+            <input type="file" accept="image/*" (change)="onCoverFileSelected($event)">
+          </div>
+          <div class="input-wrapper" style="margin-top: 8px;">
+            <i class="fa-solid fa-image"></i>
+            <input type="text" name="songCoverUrl" [(ngModel)]="songCoverUrl" placeholder="Or enter Cover Image URL link">
+          </div>
+        </div>
+
+        <!-- Audio track selection -->
+        <div class="form-group">
+          <label>Audio Song Track (Upload File OR Enter Stream URL) *</label>
+          <div class="file-input-box">
+            <input type="file" accept="audio/*" multiple (change)="onAudioFileSelected($event)">
+          </div>
+          <small style="display:block; margin-top: 4px; color: var(--text-sub); font-size:10px;">
+            Tip: You can select multiple MP3 files at once to upload them in bulk!
+          </small>
+          <div class="input-wrapper" style="margin-top: 8px;">
+            <i class="fa-solid fa-link"></i>
+            <input type="text" name="songStreamUrl" [(ngModel)]="songStreamUrl" placeholder="Or enter direct MP3 stream URL link">
+          </div>
+        </div>
+
+        @if (uploadError()) {
+          <div class="form-error">{{ uploadError() }}</div>
+        }
+        @if (uploadStatus()) {
+          <div class="form-success" style="margin-top: 8px; background-color: rgba(212, 175, 55, 0.1); border-color: var(--accent-gold); color: var(--accent-gold);">
+            <i class="fa-solid fa-spinner fa-spin"></i> {{ uploadStatus() }}
+          </div>
+        }
+
+        <button type="submit" class="btn btn-wine btn-block btn-large" [disabled]="isUploading()">
+          {{ isUploading() ? 'Uploading files...' : 'Upload Song' }}
+        </button>
+      </form>
+    </div>
+  </div>
+}

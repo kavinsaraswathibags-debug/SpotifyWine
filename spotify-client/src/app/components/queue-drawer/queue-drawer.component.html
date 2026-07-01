@@ -1,0 +1,47 @@
+<aside class="queue-panel">
+  <div class="queue-header">
+    <h3>Play Queue</h3>
+    <button id="close-queue-btn" title="Close Queue" (click)="close.emit()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  
+  <div class="queue-section">
+    <span class="queue-sub">Now Playing</span>
+    <div id="queue-now-playing-card">
+      @if (audioService.currentSong(); as song) {
+        <div class="queue-now-playing">
+          <img [src]="song.cover" alt="cover">
+          <div class="queue-track-details">
+            <span class="queue-track-title">{{ song.title }}</span>
+            <span class="queue-track-artist">{{ song.artist }}</span>
+          </div>
+        </div>
+      } @else {
+        <div class="queue-empty">No track selected</div>
+      }
+    </div>
+  </div>
+
+  <div class="queue-section flex-grow">
+    <span class="queue-sub">Next Up</span>
+    <div class="queue-list" id="queue-next-up-list">
+      @if (nextUpSongs().length === 0) {
+        <div class="queue-empty-msg">Queue is empty</div>
+      } @else {
+        @for (song of nextUpSongs(); track song.id) {
+          <div class="queue-item" (click)="playQueueTrack(song)">
+            <img [src]="song.cover" alt="cover" class="queue-item-cover">
+            <div class="queue-item-meta">
+              <span class="queue-item-name">{{ song.title }}</span>
+              <span class="queue-item-sub">{{ song.artist }}</span>
+            </div>
+            <button class="queue-item-remove-btn" title="Remove from queue" (click)="removeFromQueue(song.id, $event)">
+              <i class="fa-solid fa-circle-minus"></i>
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</aside>
