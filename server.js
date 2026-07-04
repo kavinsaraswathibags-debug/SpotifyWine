@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const os = require('os');
 
 // Load environment variables from config.env
 const envPath = path.join(__dirname, 'config.env');
@@ -20,9 +21,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'wine_spotify_secret_2026';
 
 // Middleware
 app.use(cors());
-// Disable body payload limits to allow large base64 file uploads without limits
-app.use(express.json({ limit: Infinity }));
-app.use(express.urlencoded({ limit: Infinity, extended: true }));
+// Set body payload limits to allow large base64 file uploads up to 50MB
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public', 'browser')));
@@ -415,15 +416,33 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'browser', 'index.html'));
 });
 
+// Helper to get local network IP address
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Check for IPv4 and ensure it's not internal loopback
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return null;
+}
+
 // Start Server
 async function startServer() {
   await db.connect();
   
   if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL && !process.env.NOW_BUILDER) {
     app.listen(PORT, () => {
+      const localIp = getLocalIpAddress();
       console.log(`======================================================`);
       console.log(`Spotify Prototype server is running on port ${PORT}`);
-      console.log(`Open http://localhost:${PORT} in your web browser`);
+      console.log(`Local Access:   http://localhost:${PORT}`);
+      if (localIp) {
+        console.log(`Network Access: http://${localIp}:${PORT} (For other devices on same Wi-Fi)`);
+      }
       console.log(`======================================================`);
     });
   }

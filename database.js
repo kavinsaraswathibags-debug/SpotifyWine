@@ -134,7 +134,12 @@ async function connectDB(mongoUri) {
     console.warn("\n========================================================");
     console.warn("WARNING: Could not connect to MongoDB server.");
     console.warn("Reason:", error.message);
-    console.warn(`Falling back to local file storage: ${FALLBACK_FILE}`);
+    console.warn("--------------------------------------------------------");
+    console.warn("TO AVOID LOCAL DATABASE FALLBACK:");
+    console.warn("1. Set up a free cloud database on MongoDB Atlas.");
+    console.warn("2. Whitelist '0.0.0.0/0' (allow access from anywhere) in Atlas.");
+    console.warn("3. Configure 'MONGODB_URI' in your config.env or host environment.");
+    console.warn(`\nCurrently falling back to local file storage: ${FALLBACK_FILE}`);
     console.warn("========================================================\n");
     
     useFallback = true;
