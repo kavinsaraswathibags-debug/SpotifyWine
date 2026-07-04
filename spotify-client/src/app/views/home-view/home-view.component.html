@@ -1,6 +1,6 @@
 <div class="view-panel">
   <!-- WELCOME HERO BANNER -->
-  <div class="welcome-banner">
+  <div class="welcome-banner" [appScrollAnimate]="'zoom-in'" [staggerDelay]="100">
     <div class="banner-overlay"></div>
     <div class="banner-content">
       <span class="banner-tag">SPOTIFY EXCLUSIVE</span>
@@ -14,10 +14,10 @@
 
   <!-- FEATURED ALBUMS SECTION -->
   <div class="section-container">
-    <h2>Featured Albums & Playlists</h2>
+    <h2 [appScrollAnimate]="'fade-in-up'">Featured Albums & Playlists</h2>
     <div class="categories-grid">
       <!-- 3 Movie Album Card -->
-      <div class="category-card" routerLink="/playlist/featured-3">
+      <div class="category-card" [appScrollAnimate]="'zoom-in'" [staggerDelay]="60" routerLink="/playlist/featured-3">
         <div class="category-cover-wrapper">
           <img src="/covers/cover3movie.svg" alt="3 Movie Album Cover">
           <button class="card-play-btn" title="Play 3 Album">
@@ -29,7 +29,7 @@
       </div>
 
       <!-- Ilaiyaraaja Hits Album Card -->
-      <div class="category-card" (click)="playAllHero()">
+      <div class="category-card" [appScrollAnimate]="'zoom-in'" [staggerDelay]="60" (click)="playAllHero()">
         <div class="category-cover-wrapper">
           <img src="/covers/cover1.svg" alt="Ilaiyaraaja Hits Cover">
           <button class="card-play-btn" title="Play Maestro Classics">
@@ -44,10 +44,10 @@
 
   <!-- ALBUM CATEGORIES GRID -->
   <div class="section-container">
-    <h2>Select Album Moods</h2>
+    <h2 [appScrollAnimate]="'fade-in-up'">Select Album Moods</h2>
     <div class="categories-grid">
       @for (cat of categories; track cat.title) {
-        <div class="category-card" (click)="onCategoryClick(cat)">
+        <div class="category-card" [appScrollAnimate]="'zoom-in'" [staggerDelay]="60" (click)="onCategoryClick(cat)">
           <div class="category-cover-wrapper">
             <img [src]="cat.cover" [alt]="cat.title">
             <button class="card-play-btn" (click)="playCategory(cat.title, $event)" title="Play category">
@@ -63,7 +63,7 @@
 
   <!-- CATALOG SONGS LIST -->
   <div class="section-container">
-    <div class="section-header catalog-tabs-header">
+    <div class="section-header catalog-tabs-header" [appScrollAnimate]="'fade-in-up'">
       <div class="catalog-filters">
         <button class="filter-tab" [class.active]="activeFilter() === 'all'" (click)="setFilter('all')">All Songs</button>
         <button class="filter-tab" [class.active]="activeFilter() === 'maestro'" (click)="setFilter('maestro')">Maestro's Hits</button>
@@ -94,7 +94,10 @@
         </thead>
         <tbody>
           @for (song of filteredSongs(); track song.id; let idx = $index) {
-            <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+            <tr [class.active-playing]="audioService.currentSong()?.id === song.id"
+                [appScrollAnimate]="'stagger-row'"
+                [staggerDelay]="45"
+                (click)="playTrack(song)">
               <td class="col-num">
                 <div class="song-row-num">
                   <span class="row-num-text">{{ idx + 1 }}</span>

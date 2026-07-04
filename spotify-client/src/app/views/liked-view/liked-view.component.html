@@ -1,6 +1,6 @@
 <div class="view-panel">
   <!-- PLAYLIST HEADER BANNER -->
-  <div class="playlist-header-banner liked-banner">
+  <div class="playlist-header-banner liked-banner" [appScrollAnimate]="'zoom-in'" [staggerDelay]="100">
     <div class="playlist-cover liked-cover">
       <i class="fa-solid fa-heart"></i>
     </div>
@@ -16,7 +16,7 @@
   </div>
 
   <!-- ACTIONS ROW -->
-  <div class="playlist-actions-row">
+  <div class="playlist-actions-row" [appScrollAnimate]="'fade-in-up'">
     <button class="btn-play-playlist btn-wine" 
             [disabled]="likedSongs().length === 0" 
             (click)="playLikedSongs()">
@@ -49,7 +49,10 @@
           </thead>
           <tbody>
             @for (song of likedSongs(); track song.id; let idx = $index) {
-              <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+              <tr [class.active-playing]="audioService.currentSong()?.id === song.id" 
+                  [appScrollAnimate]="'stagger-row'" 
+                  [staggerDelay]="45" 
+                  (click)="playTrack(song)">
                 <td class="col-num">
                   <div class="song-row-num">
                     <span class="row-num-text">{{ idx + 1 }}</span>

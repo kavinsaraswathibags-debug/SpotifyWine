@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, Song } from '../../services/api.service';
 import { AudioService } from '../../services/audio.service';
 import { AuthService } from '../../services/auth.service';
+import { ScrollAnimateDirective } from '../../directives/scroll-animate.directive';
 
 interface Category {
   title: string;
@@ -17,7 +18,7 @@ interface Category {
 @Component({
   selector: 'app-home-view',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ScrollAnimateDirective],
   templateUrl: './home-view.component.html',
   styleUrls: ['./home-view.component.css']
 })

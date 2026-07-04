@@ -10,7 +10,7 @@
       <div class="admin-controls-column">
         
         <!-- CARD 1: UPDATE CREDENTIALS -->
-        <div class="admin-card">
+        <div class="admin-card" [appScrollAnimate]="'zoom-in'">
           <h3>Update Admin Credentials</h3>
           <p class="admin-card-desc">Modifies credentials dynamically inside config.env. Saves on disk and reloads process values.</p>
           
@@ -42,7 +42,7 @@
         </div>
 
         <!-- CARD 2: UPLOAD SYSTEM SONG -->
-        <div class="admin-card">
+        <div class="admin-card" [appScrollAnimate]="'zoom-in'">
           <h3>Upload System Track</h3>
           <p class="admin-card-desc">Add a new song to the general catalog. Supports file uploading or streaming URL links.</p>
 
@@ -126,7 +126,7 @@
 
       <!-- RIGHT PANEL: CATALOGUE LIST & DELETE DELETER -->
       <div class="admin-catalog-column">
-        <div class="admin-card full-height">
+        <div class="admin-card full-height" [appScrollAnimate]="'zoom-in'">
           <div class="admin-card-header">
             <h3>Manage Songs Catalog</h3>
             <span class="track-count">{{ apiService.allSongs().length }} songs</span>
@@ -144,7 +144,7 @@
               </thead>
               <tbody>
                 @for (song of apiService.allSongs(); track song.id) {
-                  <tr>
+                  <tr [appScrollAnimate]="'stagger-row'" [staggerDelay]="35">
                     <td>
                       <div class="song-title-cell">
                         <img class="song-cover-mini" [src]="song.cover" alt="cover">

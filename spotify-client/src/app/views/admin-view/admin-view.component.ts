@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ApiService, Song } from '../../services/api.service';
+import { ScrollAnimateDirective } from '../../directives/scroll-animate.directive';
 
 @Component({
   selector: 'app-admin-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ScrollAnimateDirective],
   templateUrl: './admin-view.component.html',
   styleUrls: ['./admin-view.component.css']
 })

@@ -1,6 +1,6 @@
 <div class="view-panel">
   <!-- PLAYLIST HEADER BANNER -->
-  <div class="playlist-header-banner custom-playlist-banner">
+  <div class="playlist-header-banner custom-playlist-banner" [appScrollAnimate]="'zoom-in'" [staggerDelay]="100">
     <div class="playlist-cover custom-playlist-cover">
       @if (isFeatured()) {
         <img [src]="playlistCover()" alt="Cover" style="width:100%; height:100%; object-fit:cover; border-radius:4px;">
@@ -20,7 +20,7 @@
   </div>
 
   <!-- ACTIONS ROW -->
-  <div class="playlist-actions-row">
+  <div class="playlist-actions-row" [appScrollAnimate]="'fade-in-up'">
     <button class="btn-play-playlist btn-wine" 
             [disabled]="playlistSongs().length === 0" 
             (click)="playPlaylist()">
@@ -35,7 +35,7 @@
 
   <!-- SONGS TABLE -->
   <div class="section-container">
-    <h3>Songs in Playlist</h3>
+    <h3 [appScrollAnimate]="'fade-in-up'">Songs in Playlist</h3>
     <div class="songs-table-container">
       <table class="songs-table">
         <thead>
@@ -51,7 +51,10 @@
         </thead>
         <tbody>
           @for (song of playlistSongs(); track song.id; let idx = $index) {
-            <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+            <tr [class.active-playing]="audioService.currentSong()?.id === song.id"
+                [appScrollAnimate]="'stagger-row'"
+                [staggerDelay]="45"
+                (click)="playTrack(song)">
               <td class="col-num">
                 <div class="song-row-num">
                   <span class="row-num-text">{{ idx + 1 }}</span>
@@ -97,7 +100,7 @@
   @if (!isFeatured()) {
     <div class="section-container playlist-add-songs-sec">
       <hr class="divider">
-      <h3>Recommended Songs</h3>
+      <h3 [appScrollAnimate]="'fade-in-up'">Recommended Songs</h3>
       <p>Quickly add songs from the catalog to this playlist:</p>
       
       <div class="songs-table-container">
@@ -112,7 +115,7 @@
           </thead>
           <tbody>
             @for (song of recommendedSongs(); track song.id; let idx = $index) {
-              <tr>
+              <tr [appScrollAnimate]="'stagger-row'" [staggerDelay]="45">
                 <td class="col-num">{{ idx + 1 }}</td>
                 <td class="col-title">
                   <div class="song-title-cell">

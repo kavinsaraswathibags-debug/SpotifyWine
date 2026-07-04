@@ -4,11 +4,12 @@ import { RouterModule, Router } from '@angular/router';
 import { ApiService, Song } from '../../services/api.service';
 import { AudioService } from '../../services/audio.service';
 import { AuthService } from '../../services/auth.service';
+import { ScrollAnimateDirective } from '../../directives/scroll-animate.directive';
 
 @Component({
   selector: 'app-liked-view',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ScrollAnimateDirective],
   templateUrl: './liked-view.component.html',
   styleUrls: ['./liked-view.component.css']
 })

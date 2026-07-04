@@ -4,12 +4,13 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService, Song, Playlist } from '../../services/api.service';
 import { AudioService } from '../../services/audio.service';
 import { AuthService } from '../../services/auth.service';
+import { ScrollAnimateDirective } from '../../directives/scroll-animate.directive';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-playlist-detail-view',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ScrollAnimateDirective],
   templateUrl: './playlist-detail-view.component.html',
   styleUrls: ['./playlist-detail-view.component.css']
 })

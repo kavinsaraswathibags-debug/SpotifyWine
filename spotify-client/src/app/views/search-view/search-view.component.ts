@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService, Song } from '../../services/api.service';
 import { AudioService } from '../../services/audio.service';
 import { AuthService } from '../../services/auth.service';
+import { ScrollAnimateDirective } from '../../directives/scroll-animate.directive';
 import { Subscription } from 'rxjs';
 
 interface GenreCard {
@@ -15,7 +16,7 @@ interface GenreCard {
 @Component({
   selector: 'app-search-view',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ScrollAnimateDirective],
   templateUrl: './search-view.component.html',
   styleUrls: ['./search-view.component.css']
 })

@@ -1,6 +1,6 @@
 <div class="view-panel">
   <!-- SEARCH INPUT CONTAINER (Responsive layout placement) -->
-  <div class="search-view-header">
+  <div class="search-view-header" [appScrollAnimate]="'zoom-in'" [staggerDelay]="100">
     <div class="search-bar-inline">
       <i class="fa-solid fa-magnifying-glass search-bar-icon"></i>
       <input type="text" 
@@ -18,10 +18,10 @@
     @if (!searchQuery()) {
       <!-- BROWSE GENRES GRID -->
       <div id="search-browse-all">
-        <h3>Browse All Categories</h3>
+        <h3 [appScrollAnimate]="'fade-in-up'">Browse All Categories</h3>
         <div class="browse-grid">
           @for (genre of genres; track genre.title) {
-            <div class="browse-card" [style.background-color]="genre.color" (click)="selectGenre(genre.title)">
+            <div class="browse-card" [appScrollAnimate]="'zoom-in'" [staggerDelay]="60" [style.background-color]="genre.color" (click)="selectGenre(genre.title)">
               <h4>{{ genre.title }}</h4>
               <div class="browse-card-bg">
                 <i class="fa-solid" [class]="genre.icon"></i>
@@ -32,7 +32,7 @@
       </div>
     } @else {
       <!-- SEARCH RESULTS SONGS TABLE -->
-      <div class="section-header">
+      <div class="section-header" [appScrollAnimate]="'fade-in-up'">
         <h2>Search Results for "{{ searchQuery() }}"</h2>
         <span class="track-count">{{ filteredSongs().length }} songs</span>
       </div>
@@ -50,7 +50,10 @@
           </thead>
           <tbody>
             @for (song of filteredSongs(); track song.id; let idx = $index) {
-              <tr [class.active-playing]="audioService.currentSong()?.id === song.id" (click)="playTrack(song)">
+              <tr [class.active-playing]="audioService.currentSong()?.id === song.id"
+                  [appScrollAnimate]="'stagger-row'"
+                  [staggerDelay]="45"
+                  (click)="playTrack(song)">
                 <td class="col-num">
                   <div class="song-row-num">
                     <span class="row-num-text">{{ idx + 1 }}</span>

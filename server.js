@@ -20,9 +20,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'wine_spotify_secret_2026';
 
 // Middleware
 app.use(cors());
-// Set body payload limits to 100MB to allow large base64 file uploads
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// Disable body payload limits to allow large base64 file uploads without limits
+app.use(express.json({ limit: Infinity }));
+app.use(express.urlencoded({ limit: Infinity, extended: true }));
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public', 'browser')));
