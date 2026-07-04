@@ -91,18 +91,18 @@ export class AdminViewComponent implements OnInit {
       return;
     }
 
-    // Vercel serverless request body size limit is 4.5MB.
-    // Base64 encoding increases file size by ~33%. We enforce a strict 3.2MB limit to guarantee it stays under 4.5MB total request body size.
-    const MAX_FILE_SIZE = 3.2 * 1024 * 1024; // 3.2MB
+    // Backend body limit is 50MB. We enforce a 35MB limit to leave room for base64 overhead (~33% increase).
+    // Note: Vercel serverless functions have a 4.5MB request body limit. If deploying on Vercel, files should be under 3.2MB.
+    const MAX_FILE_SIZE = 35 * 1024 * 1024; // 35MB
     
     if (this.coverFile && this.coverFile.size > MAX_FILE_SIZE) {
-      this.uploadErrorMsg.set(`Cover file "${this.coverFile.name}" is too large (${(this.coverFile.size / 1024 / 1024).toFixed(2)}MB). On Vercel, uploads are limited to 4.5MB including base64 overhead. Please choose a cover image under 3MB.`);
+      this.uploadErrorMsg.set(`Cover file "${this.coverFile.name}" is too large (${(this.coverFile.size / 1024 / 1024).toFixed(2)}MB). Please choose a cover image under 35MB.`);
       return;
     }
 
     for (const file of this.audioFiles) {
       if (file.size > MAX_FILE_SIZE) {
-        this.uploadErrorMsg.set(`Audio file "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). On Vercel, uploads are limited to 4.5MB including base64 overhead. Please choose an audio file under 3.2MB, or use an external Stream URL.`);
+        this.uploadErrorMsg.set(`Audio file "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). The server upload limit is 35MB. Please choose an audio file under 35MB, or use an external Stream URL.`);
         return;
       }
     }
