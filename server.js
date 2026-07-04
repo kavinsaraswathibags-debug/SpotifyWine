@@ -14,6 +14,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const db = require('./database');
+const firebaseHelper = require('./firebase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,8 +85,8 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Helper to save base64 string to a file on disk
-function saveBase64File(base64Data, prefix, defaultExt) {
+// Helper to save base64 string to Firebase Storage or local disk fallback
+async function saveUploadFile(base64Data, prefix, defaultExt) {
   if (!base64Data) return null;
   // Format: data:audio/mp3;base64,AAAA...
   const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -106,10 +107,17 @@ function saveBase64File(base64Data, prefix, defaultExt) {
   else if (mimeType.includes('ogg')) ext = 'ogg';
 
   const filename = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
-  const filepath = path.join(uploadsDir, filename);
-  
-  fs.writeFileSync(filepath, buffer);
-  return `/uploads/${filename}`;
+
+  if (firebaseHelper.isFirebaseConfigured()) {
+    const folder = prefix === 'audio' ? 'audio' : 'covers';
+    const destPath = `songs/${folder}/${filename}`;
+    const publicUrl = await firebaseHelper.uploadToFirebase(buffer, destPath, mimeType);
+    return publicUrl;
+  } else {
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, buffer);
+    return `/uploads/${filename}`;
+  }
 }
 
 // 1. API: Get all songs from Database
@@ -237,12 +245,12 @@ app.post('/api/songs/upload', authenticateToken, async (req, res) => {
     let finalAudioUrl = streamUrl;
     let finalCoverUrl = coverUrl || '/covers/cover1.svg';
 
-    // Decode and save files locally if raw upload content is provided
+    // Decode and save files to Firebase/disk if raw upload content is provided
     if (audioData) {
-      finalAudioUrl = saveBase64File(audioData, 'audio', 'mp3');
+      finalAudioUrl = await saveUploadFile(audioData, 'audio', 'mp3');
     }
     if (coverData) {
-      finalCoverUrl = saveBase64File(coverData, 'cover', 'png');
+      finalCoverUrl = await saveUploadFile(coverData, 'cover', 'png');
     }
 
     if (!finalAudioUrl) {
@@ -285,23 +293,31 @@ app.delete('/api/songs/:id', authenticateToken, async (req, res) => {
 
     await db.deleteSong(songId);
 
-    // Delete disk storage entries if local files are hosted
-    if (song.streamUrl && song.streamUrl.startsWith('/uploads/')) {
-      try {
-        const filename = path.basename(song.streamUrl);
-        const filepath = path.join(uploadsDir, filename);
-        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-      } catch (e) {
-        console.error("Audio deletion error:", e);
+    // Delete storage entries (Firebase or local disk)
+    if (song.streamUrl) {
+      if (song.streamUrl.startsWith('/uploads/')) {
+        try {
+          const filename = path.basename(song.streamUrl);
+          const filepath = path.join(uploadsDir, filename);
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        } catch (e) {
+          console.error("Audio deletion error:", e);
+        }
+      } else if (firebaseHelper.isFirebaseConfigured()) {
+        await firebaseHelper.deleteFromFirebase(song.streamUrl);
       }
     }
-    if (song.cover && song.cover.startsWith('/uploads/')) {
-      try {
-        const filename = path.basename(song.cover);
-        const filepath = path.join(uploadsDir, filename);
-        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-      } catch (e) {
-        console.error("Cover deletion error:", e);
+    if (song.cover) {
+      if (song.cover.startsWith('/uploads/')) {
+        try {
+          const filename = path.basename(song.cover);
+          const filepath = path.join(uploadsDir, filename);
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        } catch (e) {
+          console.error("Cover deletion error:", e);
+        }
+      } else if (firebaseHelper.isFirebaseConfigured()) {
+        await firebaseHelper.deleteFromFirebase(song.cover);
       }
     }
 

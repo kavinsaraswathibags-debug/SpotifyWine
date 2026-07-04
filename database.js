@@ -3,6 +3,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const os = require('os');
+const firebaseHelper = require('./firebase');
 
 // Helper to check if a directory has write permissions
 function hasWritePermission(dir) {
@@ -129,6 +130,18 @@ function maskMongoUri(uri) {
 
 // Connection and Seeding
 async function connectDB(mongoUri) {
+  // If Firebase is configured, use Firestore instead of MongoDB
+  if (firebaseHelper.isFirebaseConfigured()) {
+    useFallback = false;
+    dbStatus.connected = true;
+    dbStatus.uri = `Firestore (Project: ${process.env.FIREBASE_PROJECT_ID})`;
+    dbStatus.error = null;
+    
+    // Seed Firestore catalog if empty
+    await seedFirestoreSongs();
+    return;
+  }
+
   if (mongoose.connection.readyState === 1) {
     useFallback = false;
     dbStatus.connected = true;
@@ -188,6 +201,36 @@ async function connectDB(mongoUri) {
   })();
 
   await dbConnectionPromise;
+}
+
+// Seed Firestore catalog if empty
+async function seedFirestoreSongs() {
+  const seedFile = path.join(__dirname, 'songs.json');
+  if (!fs.existsSync(seedFile)) {
+    console.warn("Warning: songs.json seed file not found. Skipping seeding.");
+    return;
+  }
+
+  const defaultSongs = JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
+
+  try {
+    const firestore = firebaseHelper.getFirestore();
+    const songsCollection = firestore.collection('songs');
+    const snapshot = await songsCollection.limit(1).get();
+    
+    if (snapshot.empty) {
+      console.log(`Seeding ${defaultSongs.length} songs into Firestore...`);
+      const batch = firestore.batch();
+      defaultSongs.forEach(song => {
+        const songRef = songsCollection.doc(song.id);
+        batch.set(songRef, { ...song, uploadedBy: 'system' });
+      });
+      await batch.commit();
+      console.log("Firestore seeding complete.");
+    }
+  } catch (e) {
+    console.error("Error seeding Firestore:", e);
+  }
 }
 
 async function seedSongs() {
@@ -262,6 +305,38 @@ const db = {
       data.likedSongs[userId] = [];
       writeFallbackData(data);
       return { id: userId, username: cleanUsername, email: cleanEmail };
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      
+      // Check username uniqueness
+      const userQuery = await firestore.collection('users').where('username', '==', cleanUsername).get();
+      if (!userQuery.empty) {
+        throw new Error("Username already exists");
+      }
+      
+      // Check email uniqueness
+      if (cleanEmail) {
+        const emailQuery = await firestore.collection('users').where('email', '==', cleanEmail).get();
+        if (!emailQuery.empty) {
+          throw new Error("Email already registered");
+        }
+      }
+
+      // Create User
+      const userRef = await firestore.collection('users').add({
+        username: cleanUsername,
+        password: hashedPassword,
+        email: cleanEmail,
+        resetToken: null,
+        resetTokenExpires: null
+      });
+
+      // Initialize empty liked songs document
+      await firestore.collection('likedSongs').doc(userRef.id).set({
+        songIds: []
+      });
+
+      return { id: userRef.id, username: cleanUsername, email: cleanEmail };
     } else {
       const existingUser = await UserModel.findOne({ username: cleanUsername });
       if (existingUser) {
@@ -299,6 +374,16 @@ const db = {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return null;
       return { id: user.id, username: user.username, email: user.email };
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const querySnapshot = await firestore.collection('users').where('username', '==', cleanUsername).limit(1).get();
+      if (querySnapshot.empty) return null;
+      
+      const doc = querySnapshot.docs[0];
+      const user = doc.data();
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return null;
+      return { id: doc.id, username: user.username, email: user.email };
     } else {
       const user = await UserModel.findOne({ username: cleanUsername });
       if (!user) return null;
@@ -323,6 +408,17 @@ const db = {
       user.resetToken = token;
       user.resetTokenExpires = expires.toISOString();
       writeFallbackData(data);
+      return token;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const querySnapshot = await firestore.collection('users').where('email', '==', cleanEmail).limit(1).get();
+      if (querySnapshot.empty) throw new Error("No user found with that email address.");
+
+      const doc = querySnapshot.docs[0];
+      await doc.ref.update({
+        resetToken: token,
+        resetTokenExpires: expires.toISOString()
+      });
       return token;
     } else {
       const user = await UserModel.findOne({ email: cleanEmail });
@@ -354,6 +450,24 @@ const db = {
       user.resetTokenExpires = null;
       writeFallbackData(data);
       return { success: true };
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const querySnapshot = await firestore.collection('users').where('resetToken', '==', token).limit(1).get();
+      if (querySnapshot.empty) throw new Error("Invalid or expired reset token.");
+
+      const doc = querySnapshot.docs[0];
+      const user = doc.data();
+      const expires = new Date(user.resetTokenExpires);
+      if (expires.getTime() < Date.now()) {
+        throw new Error("Password reset token has expired.");
+      }
+
+      await doc.ref.update({
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpires: null
+      });
+      return { success: true };
     } else {
       const user = await UserModel.findOne({
         resetToken: token,
@@ -374,6 +488,10 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.songs;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const snapshot = await firestore.collection('songs').get();
+      return snapshot.docs.map(doc => doc.data());
     } else {
       return await SongModel.find({});
     }
@@ -399,6 +517,10 @@ const db = {
       data.songs.push(newSong);
       writeFallbackData(data);
       return newSong;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      await firestore.collection('songs').doc(songId).set(newSong);
+      return newSong;
     } else {
       const song = new SongModel(newSong);
       await song.save();
@@ -409,13 +531,20 @@ const db = {
   async deleteSong(songId) {
     if (useFallback) {
       const data = readFallbackData();
-      const initialLength = data.songs.length;
       const song = data.songs.find(s => s.id === songId);
       if (!song) throw new Error("Song not found");
 
       data.songs = data.songs.filter(s => s.id !== songId);
       writeFallbackData(data);
       return song;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const docRef = firestore.collection('songs').doc(songId);
+      const doc = await docRef.get();
+      if (!doc.exists) throw new Error("Song not found");
+      const songData = doc.data();
+      await docRef.delete();
+      return songData;
     } else {
       const song = await SongModel.findOne({ id: songId });
       if (!song) throw new Error("Song not found");
@@ -429,6 +558,10 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.likedSongs[userId] || [];
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const doc = await firestore.collection('likedSongs').doc(userId).get();
+      return doc.exists ? (doc.data().songIds || []) : [];
     } else {
       const liked = await LikedSongsModel.findOne({ userId });
       return liked ? liked.songIds : [];
@@ -454,6 +587,28 @@ const db = {
       
       writeFallbackData(data);
       return { isLiked, songIds: data.likedSongs[userId] };
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const docRef = firestore.collection('likedSongs').doc(userId);
+      const doc = await docRef.get();
+      
+      let songIds = [];
+      if (doc.exists) {
+        songIds = doc.data().songIds || [];
+      }
+      
+      const index = songIds.indexOf(songId);
+      let isLiked = false;
+      if (index === -1) {
+        songIds.push(songId);
+        isLiked = true;
+      } else {
+        songIds.splice(index, 1);
+        isLiked = false;
+      }
+      
+      await docRef.set({ songIds }, { merge: true });
+      return { isLiked, songIds };
     } else {
       let liked = await LikedSongsModel.findOne({ userId });
       if (!liked) {
@@ -480,6 +635,18 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.playlists.filter(p => p.userId === userId);
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const snapshot = await firestore.collection('playlists').where('userId', '==', userId).get();
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId,
+          name: data.name,
+          songIds: data.songIds || []
+        };
+      });
     } else {
       const playlists = await PlaylistModel.find({ userId });
       return playlists.map(p => ({
@@ -502,6 +669,19 @@ const db = {
       data.playlists.push(newPlaylist);
       writeFallbackData(data);
       return newPlaylist;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const playlistRef = await firestore.collection('playlists').add({
+        userId,
+        name: cleanName,
+        songIds: []
+      });
+      return {
+        id: playlistRef.id,
+        userId,
+        name: cleanName,
+        songIds: []
+      };
     } else {
       const playlist = new PlaylistModel({ userId, name: cleanName, songIds: [] });
       await playlist.save();
@@ -525,6 +705,25 @@ const db = {
         writeFallbackData(data);
       }
       return playlist;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const docRef = firestore.collection('playlists').doc(playlistId);
+      const doc = await docRef.get();
+      if (!doc.exists || doc.data().userId !== userId) {
+        throw new Error("Playlist not found");
+      }
+      const data = doc.data();
+      const songIds = data.songIds || [];
+      if (!songIds.includes(songId)) {
+        songIds.push(songId);
+        await docRef.update({ songIds });
+      }
+      return {
+        id: doc.id,
+        userId: data.userId,
+        name: data.name,
+        songIds
+      };
     } else {
       const playlist = await PlaylistModel.findOne({ _id: playlistId, userId });
       if (!playlist) throw new Error("Playlist not found");
@@ -554,6 +753,26 @@ const db = {
         writeFallbackData(data);
       }
       return playlist;
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const docRef = firestore.collection('playlists').doc(playlistId);
+      const doc = await docRef.get();
+      if (!doc.exists || doc.data().userId !== userId) {
+        throw new Error("Playlist not found");
+      }
+      const data = doc.data();
+      const songIds = data.songIds || [];
+      const idx = songIds.indexOf(songId);
+      if (idx !== -1) {
+        songIds.splice(idx, 1);
+        await docRef.update({ songIds });
+      }
+      return {
+        id: doc.id,
+        userId: data.userId,
+        name: data.name,
+        songIds
+      };
     } else {
       const playlist = await PlaylistModel.findOne({ _id: playlistId, userId });
       if (!playlist) throw new Error("Playlist not found");
@@ -579,6 +798,15 @@ const db = {
       data.playlists = data.playlists.filter(p => !(p.id === playlistId && p.userId === userId));
       if (data.playlists.length === initialLength) throw new Error("Playlist not found");
       writeFallbackData(data);
+      return { success: true };
+    } else if (firebaseHelper.isFirebaseConfigured()) {
+      const firestore = firebaseHelper.getFirestore();
+      const docRef = firestore.collection('playlists').doc(playlistId);
+      const doc = await docRef.get();
+      if (!doc.exists || doc.data().userId !== userId) {
+        throw new Error("Playlist not found");
+      }
+      await docRef.delete();
       return { success: true };
     } else {
       const result = await PlaylistModel.deleteOne({ _id: playlistId, userId });
