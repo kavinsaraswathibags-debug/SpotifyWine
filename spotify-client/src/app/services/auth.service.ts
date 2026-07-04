@@ -19,6 +19,7 @@ export class AuthService {
   token = signal<string | null>(localStorage.getItem(this.tokenKey));
   currentUser = signal<User | null>(null);
   isDatabaseFallback = signal<boolean>(false);
+  dbStatus = signal<any>(null);
   isAdmin = computed(() => this.currentUser()?.isAdmin === true);
   isLoggedIn = computed(() => this.token() !== null && this.currentUser() !== null);
 
@@ -39,10 +40,11 @@ export class AuthService {
 
   fetchProfile(): Observable<any> {
     const headers = this.getAuthHeaders();
-    return this.http.get<{ user: User; isDatabaseFallback: boolean }>('/api/auth/me', { headers }).pipe(
+    return this.http.get<{ user: User; isDatabaseFallback: boolean; dbStatus?: any }>('/api/auth/me', { headers }).pipe(
       tap(res => {
         this.currentUser.set(res.user);
         this.isDatabaseFallback.set(res.isDatabaseFallback);
+        this.dbStatus.set(res.dbStatus || null);
       }),
       catchError(err => {
         this.logout();
@@ -86,5 +88,6 @@ export class AuthService {
     this.token.set(null);
     this.currentUser.set(null);
     this.isDatabaseFallback.set(false);
+    this.dbStatus.set(null);
   }
 }

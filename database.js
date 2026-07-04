@@ -111,41 +111,83 @@ const SongSchema = new mongoose.Schema({
 
 let UserModel, LikedSongsModel, PlaylistModel, SongModel;
 
+let dbConnectionPromise = null;
+let dbStatus = {
+  connected: false,
+  uri: 'Unknown',
+  error: null
+};
+
+function maskMongoUri(uri) {
+  if (!uri) return 'None';
+  try {
+    return uri.replace(/(mongodb(?:\+srv)?:\/\/[^:]+:)([^@]+)(@)/, '$1******$3');
+  } catch (e) {
+    return 'Masking Error';
+  }
+}
+
 // Connection and Seeding
 async function connectDB(mongoUri) {
-  const uri = mongoUri || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/spotify_prototype';
-  console.log(`Attempting to connect to MongoDB at: ${uri}`);
-  
-  try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 4000
-    });
-    console.log("Successfully connected to MongoDB!");
-    
-    UserModel = mongoose.model('User', UserSchema);
-    LikedSongsModel = mongoose.model('LikedSongs', LikedSongsSchema);
-    PlaylistModel = mongoose.model('Playlist', PlaylistSchema);
-    SongModel = mongoose.model('Song', SongSchema);
+  if (mongoose.connection.readyState === 1) {
     useFallback = false;
-    
-    // Seed catalog in Mongo
-    await seedSongs();
-  } catch (error) {
-    console.warn("\n========================================================");
-    console.warn("WARNING: Could not connect to MongoDB server.");
-    console.warn("Reason:", error.message);
-    console.warn("--------------------------------------------------------");
-    console.warn("TO AVOID LOCAL DATABASE FALLBACK:");
-    console.warn("1. Set up a free cloud database on MongoDB Atlas.");
-    console.warn("2. Whitelist '0.0.0.0/0' (allow access from anywhere) in Atlas.");
-    console.warn("3. Configure 'MONGODB_URI' in your config.env or host environment.");
-    console.warn(`\nCurrently falling back to local file storage: ${FALLBACK_FILE}`);
-    console.warn("========================================================\n");
-    
-    useFallback = true;
-    initFallbackDB();
-    await seedSongs();
+    dbStatus.connected = true;
+    dbStatus.error = null;
+    return;
   }
+
+  if (dbConnectionPromise) {
+    await dbConnectionPromise;
+    return;
+  }
+
+  const uri = mongoUri || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/spotify_prototype';
+  dbStatus.uri = maskMongoUri(uri);
+  console.log(`Attempting to connect to MongoDB at: ${dbStatus.uri}`);
+  
+  dbConnectionPromise = (async () => {
+    try {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 6000
+      });
+      console.log("Successfully connected to MongoDB!");
+      
+      UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
+      LikedSongsModel = mongoose.models.LikedSongs || mongoose.model('LikedSongs', LikedSongsSchema);
+      PlaylistModel = mongoose.models.Playlist || mongoose.model('Playlist', PlaylistSchema);
+      SongModel = mongoose.models.Song || mongoose.model('Song', SongSchema);
+      useFallback = false;
+      
+      dbStatus.connected = true;
+      dbStatus.error = null;
+
+      // Seed catalog in Mongo
+      await seedSongs();
+    } catch (error) {
+      console.warn("\n========================================================");
+      console.warn("WARNING: Could not connect to MongoDB server.");
+      console.warn("Reason:", error.message);
+      console.warn("--------------------------------------------------------");
+      console.warn("TO AVOID LOCAL DATABASE FALLBACK:");
+      console.warn("1. Set up a free cloud database on MongoDB Atlas.");
+      console.warn("2. Whitelist '0.0.0.0/0' (allow access from anywhere) in Atlas.");
+      console.warn("3. Configure 'MONGODB_URI' in your config.env or host environment.");
+      console.warn(`\nCurrently falling back to local file storage: ${FALLBACK_FILE}`);
+      console.warn("========================================================\n");
+      
+      useFallback = true;
+      dbStatus.connected = false;
+      dbStatus.error = error.message;
+
+      initFallbackDB();
+      await seedSongs();
+      
+      // Clear promise on failure to allow retrying on subsequent requests
+      dbConnectionPromise = null;
+    }
+  })();
+
+  await dbConnectionPromise;
 }
 
 async function seedSongs() {
@@ -183,6 +225,7 @@ async function seedSongs() {
 const db = {
   connect: connectDB,
   isFallback: () => useFallback,
+  getStatus: () => dbStatus,
 
   // User Auth
   async createUser(username, password, email) {

@@ -19,11 +19,43 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'wine_spotify_secret_2026';
 
+// Helper to check if a directory has write permissions
+function hasWritePermission(dir) {
+  try {
+    const testFile = path.join(dir, '.write_test');
+    fs.writeFileSync(testFile, '');
+    fs.unlinkSync(testFile);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Dynamically resolve uploads folder based on environment write permission
+const uploadsDir = (process.env.VERCEL || process.env.NOW_BUILDER || !fs.existsSync(path.join(__dirname, 'uploads')) || !hasWritePermission(__dirname))
+  ? path.join(os.tmpdir(), 'uploads')
+  : path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Middleware
 app.use(cors());
 // Set body payload limits to allow large base64 file uploads up to 50MB
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Middleware to ensure DB connection is ready before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await db.connect();
+    next();
+  } catch (err) {
+    console.error("Database connection middleware error:", err);
+    next();
+  }
+});
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public', 'browser')));
@@ -32,7 +64,7 @@ app.use(express.static(path.join(__dirname, 'public', 'browser')));
 app.use('/songs', express.static(path.join(__dirname, 'illayaraja hits')));
 
 // Serve dynamically uploaded songs under '/uploads' path
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Authenticate JWT Middleware
 function authenticateToken(req, res, next) {
@@ -74,7 +106,7 @@ function saveBase64File(base64Data, prefix, defaultExt) {
   else if (mimeType.includes('ogg')) ext = 'ogg';
 
   const filename = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
-  const filepath = path.join(__dirname, 'uploads', filename);
+  const filepath = path.join(uploadsDir, filename);
   
   fs.writeFileSync(filepath, buffer);
   return `/uploads/${filename}`;
@@ -143,7 +175,11 @@ app.post('/api/auth/login', async (req, res) => {
 
 // 4. API: Get current user info
 app.get('/api/auth/me', authenticateToken, (req, res) => {
-  res.json({ user: req.user, isDatabaseFallback: db.isFallback() });
+  res.json({ 
+    user: req.user, 
+    isDatabaseFallback: db.isFallback(),
+    dbStatus: db.getStatus()
+  });
 });
 
 // 5. API: Forgot Password (recovery link simulation)
@@ -252,7 +288,8 @@ app.delete('/api/songs/:id', authenticateToken, async (req, res) => {
     // Delete disk storage entries if local files are hosted
     if (song.streamUrl && song.streamUrl.startsWith('/uploads/')) {
       try {
-        const filepath = path.join(__dirname, song.streamUrl);
+        const filename = path.basename(song.streamUrl);
+        const filepath = path.join(uploadsDir, filename);
         if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
       } catch (e) {
         console.error("Audio deletion error:", e);
@@ -260,7 +297,8 @@ app.delete('/api/songs/:id', authenticateToken, async (req, res) => {
     }
     if (song.cover && song.cover.startsWith('/uploads/')) {
       try {
-        const filepath = path.join(__dirname, song.cover);
+        const filename = path.basename(song.cover);
+        const filepath = path.join(uploadsDir, filename);
         if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
       } catch (e) {
         console.error("Cover deletion error:", e);

@@ -9,6 +9,54 @@
       <!-- LEFT PANEL: SETTINGS & UPLOADS -->
       <div class="admin-controls-column">
         
+        <!-- CARD: DATABASE CONNECTION STATUS -->
+        <div class="admin-card db-status-card" [appScrollAnimate]="'zoom-in'">
+          <h3>Database Connection Status</h3>
+          <p class="admin-card-desc">Active database configuration and connectivity state.</p>
+          
+          <div class="db-status-details">
+            <div class="status-row">
+              <span class="status-label">Active Connection:</span>
+              <span class="status-badge" [class.badge-success]="!authService.isDatabaseFallback()" [class.badge-danger]="authService.isDatabaseFallback()">
+                <i class="fa-solid" [class.fa-circle-check]="!authService.isDatabaseFallback()" [class.fa-triangle-exclamation]="authService.isDatabaseFallback()"></i>
+                {{ authService.isDatabaseFallback() ? 'Local JSON Fallback' : 'MongoDB Connected' }}
+              </span>
+            </div>
+            
+            @if (authService.dbStatus(); as status) {
+              <div class="status-info-box">
+                <div class="info-item">
+                  <span class="info-label">Target URI:</span>
+                  <code class="info-value">{{ status.uri }}</code>
+                </div>
+                
+                @if (status.error) {
+                  <div class="info-item error-item">
+                    <span class="info-label">Connection Error:</span>
+                    <div class="error-msg-box">
+                      <i class="fa-solid fa-circle-exclamation"></i>
+                      <span>{{ status.error }}</span>
+                    </div>
+                  </div>
+                  <div class="db-troubleshoot-tips">
+                    <strong>Troubleshooting Tips:</strong>
+                    <ul>
+                      <li>Ensure your <strong>MONGODB_URI</strong> is correctly set in your Vercel project environment variables settings.</li>
+                      <li>Verify you have whitelisted <strong>0.0.0.0/0</strong> (all IPs) in MongoDB Atlas settings (Network Access panel).</li>
+                      <li>Double check your database username and password in the connection string.</li>
+                    </ul>
+                  </div>
+                } @else {
+                  <div class="info-item success-item">
+                    <span class="info-label">Status:</span>
+                    <span class="success-text"><i class="fa-solid fa-circle-check"></i> Connected successfully! Metadata is persistent.</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
         <!-- CARD 1: UPDATE CREDENTIALS -->
         <div class="admin-card" [appScrollAnimate]="'zoom-in'">
           <h3>Update Admin Credentials</h3>
