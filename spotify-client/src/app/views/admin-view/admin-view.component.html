@@ -123,7 +123,14 @@
               <label for="songCategory">Category/Mood</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-tags"></i>
-                <input type="text" id="songCategory" name="songCategory" [(ngModel)]="songCategory" placeholder="e.g. Viral Hits">
+                <select id="songCategory" name="songCategory" [(ngModel)]="songCategory">
+                  <option value="melody song">Melody song</option>
+                  <option value="romantic song">Romantic song</option>
+                  <option value="hits song">Hits song</option>
+                  <option value="mass song">Mass song</option>
+                  <option value="trending song">Trending song</option>
+                  <option value="kuthu song">Kuthu song</option>
+                </select>
               </div>
             </div>
 

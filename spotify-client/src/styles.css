@@ -1226,7 +1226,8 @@ input {
   font-size: 14px;
 }
 
-.input-wrapper input {
+.input-wrapper input,
+.input-wrapper select {
   width: 100%;
   background-color: var(--bg-deep);
   border: 1px solid var(--border-color);
@@ -1237,7 +1238,8 @@ input {
   transition: var(--transition-fast);
 }
 
-.input-wrapper input:focus {
+.input-wrapper input:focus,
+.input-wrapper select:focus {
   border-color: var(--accent-wine);
   box-shadow: 0 0 10px var(--accent-wine-translucent);
 }

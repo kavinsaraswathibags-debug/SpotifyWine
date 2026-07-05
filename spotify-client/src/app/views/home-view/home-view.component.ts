@@ -58,7 +58,7 @@ export class HomeViewComponent {
   songTitle = '';
   songArtist = '';
   songAlbum = '';
-  songCategory = 'Shared Tracks';
+  songCategory = 'melody song';
   songCoverUrl = '';
   songStreamUrl = '';
   

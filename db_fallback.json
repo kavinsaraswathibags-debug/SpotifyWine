@@ -1,6 +1,23 @@
 {
-  "users": [],
-  "likedSongs": {},
+  "users": [
+    {
+      "id": "user_1783230833401",
+      "username": "fallbackuser1",
+      "password": "$2a$10$Da43dYqQ8sQ8H1yqMimHE./ULkavb3Dy0Lljj9qIBTwcDT3VTfDo2",
+      "email": "fallbackuser1@test.com",
+      "resetToken": null,
+      "resetTokenExpires": null
+    }
+  ],
+  "likedSongs": {
+    "user_1783230833401": [
+      "track-1",
+      "track-2"
+    ],
+    "000000000000000000000000": [
+      "track-1"
+    ]
+  },
   "playlists": [],
   "songs": [
     {

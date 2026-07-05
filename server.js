@@ -164,7 +164,7 @@ app.post('/api/auth/login', async (req, res) => {
   const adminPass = process.env.ADMIN_PASSWORD || 'kavinkumar@2002';
 
   if (username.trim().toLowerCase() === adminUser && password === adminPass) {
-    const user = { id: 'admin', username: adminUser, isAdmin: true };
+    const user = { id: '000000000000000000000000', username: adminUser, isAdmin: true };
     const token = jwt.sign({ id: user.id, username: user.username, isAdmin: true }, JWT_SECRET, { expiresIn: '7d' });
     return res.json({ token, user });
   }

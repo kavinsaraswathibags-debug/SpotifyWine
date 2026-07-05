@@ -28,6 +28,7 @@ try {
 }
 
 let useFallback = false;
+let useFirestore = false;
 
 // Initialize Fallback JSON DB if it doesn't exist
 function initFallbackDB() {
@@ -130,20 +131,7 @@ function maskMongoUri(uri) {
 
 // Connection and Seeding
 async function connectDB(mongoUri) {
-  // If Firebase is configured, use Firestore instead of MongoDB
-  if (firebaseHelper.isFirebaseConfigured()) {
-    useFallback = false;
-    dbStatus.connected = true;
-    dbStatus.uri = `Firestore (Project: ${process.env.FIREBASE_PROJECT_ID})`;
-    dbStatus.error = null;
-    
-    // Seed Firestore catalog if empty
-    await seedFirestoreSongs();
-    return;
-  }
-
-  if (mongoose.connection.readyState === 1) {
-    useFallback = false;
+  if (mongoose.connection.readyState === 1 && !useFallback && !useFirestore) {
     dbStatus.connected = true;
     dbStatus.error = null;
     return;
@@ -169,8 +157,9 @@ async function connectDB(mongoUri) {
       LikedSongsModel = mongoose.models.LikedSongs || mongoose.model('LikedSongs', LikedSongsSchema);
       PlaylistModel = mongoose.models.Playlist || mongoose.model('Playlist', PlaylistSchema);
       SongModel = mongoose.models.Song || mongoose.model('Song', SongSchema);
-      useFallback = false;
       
+      useFallback = false;
+      useFirestore = false;
       dbStatus.connected = true;
       dbStatus.error = null;
 
@@ -181,19 +170,37 @@ async function connectDB(mongoUri) {
       console.warn("WARNING: Could not connect to MongoDB server.");
       console.warn("Reason:", error.message);
       console.warn("--------------------------------------------------------");
-      console.warn("TO AVOID LOCAL DATABASE FALLBACK:");
-      console.warn("1. Set up a free cloud database on MongoDB Atlas.");
-      console.warn("2. Whitelist '0.0.0.0/0' (allow access from anywhere) in Atlas.");
-      console.warn("3. Configure 'MONGODB_URI' in your config.env or host environment.");
-      console.warn(`\nCurrently falling back to local file storage: ${FALLBACK_FILE}`);
-      console.warn("========================================================\n");
       
-      useFallback = true;
       dbStatus.connected = false;
       dbStatus.error = error.message;
 
-      initFallbackDB();
-      await seedSongs();
+      if (firebaseHelper.isFirebaseConfigured()) {
+        console.warn("TO AVOID FIREBASE FIRESTORE FALLBACK:");
+        console.warn("1. Start local MongoDB, or correct MONGODB_URI.");
+        console.warn(`\nCurrently falling back to Firebase Firestore database.`);
+        console.warn("========================================================\n");
+        
+        useFallback = false;
+        useFirestore = true;
+        dbStatus.connected = true;
+        dbStatus.uri = `Firestore (Project: ${process.env.FIREBASE_PROJECT_ID})`;
+        dbStatus.error = null;
+        
+        await seedFirestoreSongs();
+      } else {
+        console.warn("TO AVOID LOCAL DATABASE FALLBACK:");
+        console.warn("1. Set up a free cloud database on MongoDB Atlas.");
+        console.warn("2. Whitelist '0.0.0.0/0' (allow access from anywhere) in Atlas.");
+        console.warn("3. Configure 'MONGODB_URI' in your config.env or host environment.");
+        console.warn(`\nCurrently falling back to local file storage: ${FALLBACK_FILE}`);
+        console.warn("========================================================\n");
+        
+        useFallback = true;
+        useFirestore = false;
+        
+        initFallbackDB();
+        await seedSongs();
+      }
       
       // Clear promise on failure to allow retrying on subsequent requests
       dbConnectionPromise = null;
@@ -305,7 +312,7 @@ const db = {
       data.likedSongs[userId] = [];
       writeFallbackData(data);
       return { id: userId, username: cleanUsername, email: cleanEmail };
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       
       // Check username uniqueness
@@ -374,7 +381,7 @@ const db = {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return null;
       return { id: user.id, username: user.username, email: user.email };
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const querySnapshot = await firestore.collection('users').where('username', '==', cleanUsername).limit(1).get();
       if (querySnapshot.empty) return null;
@@ -409,7 +416,7 @@ const db = {
       user.resetTokenExpires = expires.toISOString();
       writeFallbackData(data);
       return token;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const querySnapshot = await firestore.collection('users').where('email', '==', cleanEmail).limit(1).get();
       if (querySnapshot.empty) throw new Error("No user found with that email address.");
@@ -450,7 +457,7 @@ const db = {
       user.resetTokenExpires = null;
       writeFallbackData(data);
       return { success: true };
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const querySnapshot = await firestore.collection('users').where('resetToken', '==', token).limit(1).get();
       if (querySnapshot.empty) throw new Error("Invalid or expired reset token.");
@@ -488,7 +495,7 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.songs;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const snapshot = await firestore.collection('songs').get();
       return snapshot.docs.map(doc => doc.data());
@@ -517,7 +524,7 @@ const db = {
       data.songs.push(newSong);
       writeFallbackData(data);
       return newSong;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       await firestore.collection('songs').doc(songId).set(newSong);
       return newSong;
@@ -537,7 +544,7 @@ const db = {
       data.songs = data.songs.filter(s => s.id !== songId);
       writeFallbackData(data);
       return song;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const docRef = firestore.collection('songs').doc(songId);
       const doc = await docRef.get();
@@ -558,7 +565,7 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.likedSongs[userId] || [];
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const doc = await firestore.collection('likedSongs').doc(userId).get();
       return doc.exists ? (doc.data().songIds || []) : [];
@@ -587,7 +594,7 @@ const db = {
       
       writeFallbackData(data);
       return { isLiked, songIds: data.likedSongs[userId] };
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const docRef = firestore.collection('likedSongs').doc(userId);
       const doc = await docRef.get();
@@ -635,7 +642,7 @@ const db = {
     if (useFallback) {
       const data = readFallbackData();
       return data.playlists.filter(p => p.userId === userId);
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const snapshot = await firestore.collection('playlists').where('userId', '==', userId).get();
       return snapshot.docs.map(doc => {
@@ -669,7 +676,7 @@ const db = {
       data.playlists.push(newPlaylist);
       writeFallbackData(data);
       return newPlaylist;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const playlistRef = await firestore.collection('playlists').add({
         userId,
@@ -705,7 +712,7 @@ const db = {
         writeFallbackData(data);
       }
       return playlist;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const docRef = firestore.collection('playlists').doc(playlistId);
       const doc = await docRef.get();
@@ -753,7 +760,7 @@ const db = {
         writeFallbackData(data);
       }
       return playlist;
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const docRef = firestore.collection('playlists').doc(playlistId);
       const doc = await docRef.get();
@@ -799,7 +806,7 @@ const db = {
       if (data.playlists.length === initialLength) throw new Error("Playlist not found");
       writeFallbackData(data);
       return { success: true };
-    } else if (firebaseHelper.isFirebaseConfigured()) {
+    } else if (useFirestore) {
       const firestore = firebaseHelper.getFirestore();
       const docRef = firestore.collection('playlists').doc(playlistId);
       const doc = await docRef.get();

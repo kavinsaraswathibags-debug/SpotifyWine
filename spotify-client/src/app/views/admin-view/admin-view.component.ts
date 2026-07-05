@@ -24,7 +24,7 @@ export class AdminViewComponent implements OnInit {
   songTitle = '';
   songArtist = '';
   songAlbum = '';
-  songCategory = 'System Classics';
+  songCategory = 'melody song';
   songCoverUrl = '';
   songStreamUrl = '';
 
