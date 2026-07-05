@@ -43,9 +43,9 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(cors());
-// Set body payload limits to allow large base64 file uploads up to 50MB
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Set body payload limits to allow large base64 file uploads up to 100MB
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Middleware to ensure DB connection is ready before handling requests
 app.use(async (req, res, next) => {
@@ -230,6 +230,38 @@ app.post('/api/auth/reset-password', async (req, res) => {
     res.json({ success: true, message: "Password successfully reset" });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// 6.5 API: Request Presigned URL for direct client-side upload to Firebase Storage
+app.post('/api/uploads/presign', authenticateToken, async (req, res) => {
+  const { mimeType, prefix } = req.body;
+  if (!mimeType || !prefix) {
+    return res.status(400).json({ error: "mimeType and prefix (audio/cover) are required" });
+  }
+
+  try {
+    if (firebaseHelper.isFirebaseConfigured()) {
+      let ext = prefix === 'audio' ? 'mp3' : 'png';
+      if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+      else if (mimeType.includes('png')) ext = 'png';
+      else if (mimeType.includes('svg')) ext = 'svg';
+      else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) ext = 'mp3';
+      else if (mimeType.includes('wav')) ext = 'wav';
+      else if (mimeType.includes('ogg')) ext = 'ogg';
+
+      const filename = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+      const folder = prefix === 'audio' ? 'audio' : 'covers';
+      const destPath = `songs/${folder}/${filename}`;
+
+      const { uploadUrl, publicUrl } = await firebaseHelper.getPresignedUploadUrl(destPath, mimeType);
+      return res.json({ usePresignedUrl: true, uploadUrl, publicUrl });
+    } else {
+      return res.json({ usePresignedUrl: false });
+    }
+  } catch (error) {
+    console.error("Presign error:", error);
+    res.status(500).json({ error: "Failed to generate upload URL: " + error.message });
   }
 });
 

@@ -169,6 +169,38 @@ export class HomeViewComponent {
     });
   }
 
+  private async prepareUploadFile(file: File | null, prefix: 'audio' | 'cover'): Promise<{ data: string | null; url: string | undefined }> {
+    if (!file) return { data: null, url: undefined };
+
+    try {
+      this.uploadStatus.set(`Requesting secure upload permission for ${file.name}...`);
+      const presign = await new Promise<any>((resolve, reject) => {
+        this.apiService.getPresignedUrl(prefix, file.type).subscribe({
+          next: (res) => resolve(res),
+          error: (err) => reject(err)
+        });
+      });
+
+      if (presign && presign.usePresignedUrl && presign.uploadUrl) {
+        this.uploadStatus.set(`Uploading ${file.name} directly to storage...`);
+        await new Promise<void>((resolve, reject) => {
+          this.apiService.uploadToStorage(presign.uploadUrl, file).subscribe({
+            next: () => resolve(),
+            error: (err) => reject(err)
+          });
+        });
+        return { data: null, url: presign.publicUrl };
+      }
+    } catch (e) {
+      console.warn("Direct upload failed, falling back to legacy base64 upload:", e);
+    }
+
+    // Fallback to base64 legacy upload
+    this.uploadStatus.set(`Encoding ${file.name} for fallback upload...`);
+    const base64Data = await this.readFileAsBase64(file);
+    return { data: base64Data, url: undefined };
+  }
+
   async handleSongUpload(): Promise<void> {
     this.uploadError.set('');
     this.uploadStatus.set('');
@@ -186,12 +218,34 @@ export class HomeViewComponent {
       return;
     }
 
+    // Backend body limit is 100MB. We enforce a 75MB limit to leave room for base64 overhead (~33% increase).
+    // Note: Vercel serverless functions have a 4.5MB request body limit. If deploying on Vercel, files should be under 3.2MB.
+    const MAX_FILE_SIZE = 75 * 1024 * 1024; // 75MB
+
+    if (this.coverFile && this.coverFile.size > MAX_FILE_SIZE) {
+      this.uploadError.set(`Cover file "${this.coverFile.name}" is too large (${(this.coverFile.size / 1024 / 1024).toFixed(2)}MB). Please choose a cover image under 75MB.`);
+      return;
+    }
+
+    for (const file of this.audioFiles) {
+      if (file.size > MAX_FILE_SIZE) {
+        this.uploadError.set(`Audio file "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). The upload limit is 75MB. Please choose a smaller file.`);
+        return;
+      }
+    }
+
     this.isUploading.set(true);
 
     try {
       let coverData: string | null = null;
+      let finalCoverUrl = this.songCoverUrl || undefined;
+      
       if (this.coverFile) {
-        coverData = await this.readFileAsBase64(this.coverFile);
+        const coverUpload = await this.prepareUploadFile(this.coverFile, 'cover');
+        coverData = coverUpload.data;
+        if (coverUpload.url) {
+          finalCoverUrl = coverUpload.url;
+        }
       }
 
       // If multiple local files are selected, we perform sequential bulk uploads
@@ -214,7 +268,14 @@ export class HomeViewComponent {
 
           this.uploadStatus.set(`Uploading song ${i + 1} of ${this.audioFiles.length}: "${title}"...`);
           
-          const audioData = await this.readFileAsBase64(file);
+          let audioData: string | null = null;
+          let finalAudioUrl = undefined;
+          
+          const audioUpload = await this.prepareUploadFile(file, 'audio');
+          audioData = audioUpload.data;
+          if (audioUpload.url) {
+            finalAudioUrl = audioUpload.url;
+          }
 
           try {
             await new Promise<void>((resolve, reject) => {
@@ -224,9 +285,9 @@ export class HomeViewComponent {
                 album,
                 category,
                 coverData,
-                coverUrl: this.songCoverUrl || undefined,
+                coverUrl: finalCoverUrl,
                 audioData,
-                streamUrl: undefined
+                streamUrl: finalAudioUrl
               }).subscribe({
                 next: () => {
                   successCount++;
@@ -266,8 +327,14 @@ export class HomeViewComponent {
         }
 
         let audioData: string | null = null;
+        let finalAudioUrl = this.songStreamUrl || undefined;
+        
         if (this.audioFiles[0]) {
-          audioData = await this.readFileAsBase64(this.audioFiles[0]);
+          const audioUpload = await this.prepareUploadFile(this.audioFiles[0], 'audio');
+          audioData = audioUpload.data;
+          if (audioUpload.url) {
+            finalAudioUrl = audioUpload.url;
+          }
         }
 
         this.apiService.uploadSong({
@@ -276,9 +343,9 @@ export class HomeViewComponent {
           album,
           category,
           coverData,
-          coverUrl: this.songCoverUrl || undefined,
+          coverUrl: finalCoverUrl,
           audioData,
-          streamUrl: this.songStreamUrl || undefined
+          streamUrl: finalAudioUrl
         }).subscribe({
           next: () => {
             alert(`Song "${title}" uploaded successfully!`);

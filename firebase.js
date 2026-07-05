@@ -27,6 +27,20 @@ if (projectId && clientEmail && privateKey && storageBucket) {
     firestore = admin.firestore();
     configured = true;
     console.log("Firebase Admin SDK successfully initialized for Storage and Firestore!");
+    
+    // Configure CORS programmatically so client direct PUT uploads are permitted
+    bucket.setCorsConfiguration([
+      {
+        origin: ['*'],
+        method: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+        responseHeader: ['Content-Type', 'Authorization', 'Content-Length', 'User-Agent', 'x-goog-resumable'],
+        maxAgeSeconds: 3600
+      }
+    ]).then(() => {
+      console.log("Firebase Storage CORS configuration successfully updated!");
+    }).catch(corsErr => {
+      console.error("Warning: Failed to set Firebase Storage CORS configuration programmatically:", corsErr.message);
+    });
   } catch (error) {
     console.error("Failed to initialize Firebase Admin SDK:", error);
   }
@@ -96,9 +110,34 @@ async function deleteFromFirebase(fileUrl) {
   }
 }
 
+/**
+ * Generates a v4 presigned write URL for client-side direct upload.
+ * @param {string} destPath - Destination path in the bucket.
+ * @param {string} mimeType - The MIME type of the file.
+ * @returns {Promise<{uploadUrl: string, publicUrl: string}>} Presigned write URL and final public URL.
+ */
+async function getPresignedUploadUrl(destPath, mimeType) {
+  if (!configured || !bucket) {
+    throw new Error("Firebase is not configured");
+  }
+
+  const file = bucket.file(destPath);
+  
+  const [url] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes validity
+    contentType: mimeType
+  });
+
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destPath}`;
+  return { uploadUrl: url, publicUrl };
+}
+
 module.exports = {
   isFirebaseConfigured,
   getFirestore,
   uploadToFirebase,
-  deleteFromFirebase
+  deleteFromFirebase,
+  getPresignedUploadUrl
 };

@@ -1,5 +1,5 @@
 import { Injectable, signal, effect } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { AuthService } from './auth.service';
 
@@ -105,6 +105,22 @@ export class ApiService {
         throw err;
       })
     );
+  }
+
+  getPresignedUrl(prefix: 'audio' | 'cover', mimeType: string): Observable<{ usePresignedUrl: boolean; uploadUrl?: string; publicUrl?: string }> {
+    const headers = this.authService.getAuthHeaders();
+    return this.http.post<{ usePresignedUrl: boolean; uploadUrl?: string; publicUrl?: string }>(
+      '/api/uploads/presign',
+      { prefix, mimeType },
+      { headers }
+    );
+  }
+
+  uploadToStorage(uploadUrl: string, file: File): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': file.type
+    });
+    return this.http.put(uploadUrl, file, { headers });
   }
 
   deleteSong(songId: string): Observable<any> {
